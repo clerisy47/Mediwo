@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Stethoscope, User, FileText, Shield, Clock, Heart } from 'lucide-react';
+import { Stethoscope, User, FileText, Calendar, Clock, Heart } from 'lucide-react';
 import Navbar from '../components/Navbar';
 
 const Home = () => {
@@ -20,9 +20,11 @@ const Home = () => {
       description: 'Doctors can view and manage patient records efficiently'
     },
     {
-      icon: <Shield className="w-8 h-8" />,
-      title: 'Secure & Private',
-      description: 'Your medical data is protected with advanced security'
+      icon: <Calendar className="w-8 h-8" />,
+      title: 'Appointment Bookings',
+      description: 'Secure your appointment, generate your digital token number, and track your live queue status instantly.',
+      path: '/appointment', // This links to your new feature
+      highlight: true // Optional flag to style it differently
     },
     {
       icon: <Clock className="w-8 h-8" />,
@@ -74,6 +76,7 @@ const Home = () => {
           {features.map((feature, index) => (
             <div
               key={index}
+              onClick={() => feature.path && navigate(feature.path)}
               className="bg-white rounded-xl p-6 shadow-md hover:shadow-xl transition duration-200 border border-gray-100"
             >
               <div className="text-blue-600 mb-4">{feature.icon}</div>

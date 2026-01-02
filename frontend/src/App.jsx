@@ -14,6 +14,7 @@ import Upload from './pages/Upload';
 import Home from './pages/Home';
 import Patients from './pages/Patients';
 import PatientDetail from './pages/PatientDetail';
+import Appointment from './pages/appointment';
 import Navbar from './components/Navbar';
 
 
@@ -40,6 +41,7 @@ function AppRoutes() {
       {user && <Navbar />}
       <Routes>
         <Route path="/" element={ <Home />} />
+        <Route path="/appointment" element={<Appointment />} />
         <Route path="/login" element={!user ? <Login /> : <Navigate to="/profile" />} />
         <Route path="/register" element={!user ? <Register /> : <Navigate to="/profile" />} />
         <Route
