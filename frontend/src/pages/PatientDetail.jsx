@@ -25,9 +25,9 @@ const PatientDetail = () => {
       address: '123 Main Street, City, State 12345',
       emergencyContact: 'Jane Doe - +1-234-567-8900',
       medicalHistory: [
-        { date: '2024-01-20', description: 'Blood pressure check - Normal', doctor: 'Dr. Nikolas Bhusal' },
-        { date: '2024-01-15', description: 'Initial consultation for hypertension', doctor: 'Dr. Nikolas Bhusal' },
-        { date: '2023-12-10', description: 'Routine checkup', doctor: 'Dr. Nikolas Bhusal' }
+        { date: '2024-01-20', description: 'Blood pressure check - Normal', doctor: 'Dr. Albert Einstein' },
+        { date: '2024-01-15', description: 'Initial consultation for hypertension', doctor: 'Dr. Albert Einstein' },
+        { date: '2023-12-10', description: 'Routine checkup', doctor: 'Dr. Albert Einstein' }
       ],
       medications: [
         { name: 'Lisinopril', dosage: '10mg', frequency: 'Once daily', startDate: '2024-01-15' },
@@ -54,8 +54,8 @@ const PatientDetail = () => {
       address: '456 Oak Avenue, City, State 12346',
       emergencyContact: 'John Smith - +1-234-567-8901',
       medicalHistory: [
-        { date: '2024-01-22', description: 'Blood sugar monitoring - Controlled', doctor: 'Dr. Nikolas Bhusal' },
-        { date: '2024-01-20', description: 'Diabetes management consultation', doctor: 'Dr. Nikolas Bhusal' }
+        { date: '2024-01-22', description: 'Blood sugar monitoring - Controlled', doctor: 'Dr. Albert Einstein' },
+        { date: '2024-01-20', description: 'Diabetes management consultation', doctor: 'Dr. Albert Einstein' }
       ],
       medications: [
         { name: 'Metformin', dosage: '500mg', frequency: 'Twice daily', startDate: '2024-01-20' },
@@ -82,8 +82,8 @@ const PatientDetail = () => {
       address: '789 Pine Road, City, State 12347',
       emergencyContact: 'Mary Johnson - +1-234-567-8902',
       medicalHistory: [
-        { date: '2024-01-21', description: 'ECG monitoring - Irregular rhythm detected', doctor: 'Dr. Nikolas Bhusal' },
-        { date: '2024-01-18', description: 'Cardiac evaluation for arrhythmia', doctor: 'Dr. Nikolas Bhusal' }
+        { date: '2024-01-21', description: 'ECG monitoring - Irregular rhythm detected', doctor: 'Dr. Albert Einstein' },
+        { date: '2024-01-18', description: 'Cardiac evaluation for arrhythmia', doctor: 'Dr. Albert Einstein' }
       ],
       medications: [
         { name: 'Metoprolol', dosage: '50mg', frequency: 'Twice daily', startDate: '2024-01-18' },

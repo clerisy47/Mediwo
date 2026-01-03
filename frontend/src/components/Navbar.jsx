@@ -5,7 +5,6 @@ import { useSnackbar } from 'notistack';
 
 const Navbar = () => {
   const { user, logout } = useAuth();
-  console.log("user", user)
   const { enqueueSnackbar } = useSnackbar();
   const navigate = useNavigate();
   const location = useLocation();
@@ -70,7 +69,7 @@ const Navbar = () => {
                     <div>
                     <Link
                     to="/login"
-                    className="px-8 py-3 bg-blue-600 text-white  font-semibold hover:bg-blue-700 transition duration-200 text-lg"
+                    className="px-8 py-3 bg-blue-600 !text-blue-50 font-semibold hover:bg-blue-700 transition duration-200 text-lg"
                   >
                     Sign In
                   </Link>
@@ -94,4 +93,3 @@ const Navbar = () => {
 };
 
 export default Navbar;
-
