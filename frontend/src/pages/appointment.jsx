@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useAuth } from '../context/AuthContext';
 import { 
   Building2, 
   Stethoscope, 
@@ -22,6 +23,7 @@ import {
   MapPin,
   Printer
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 // --- MOCK DATA ---
 const HOSPITALS = [
@@ -85,6 +87,7 @@ const STEPS = [
 ];
 
 export default function HospitalBookingFlow() {
+  const { user } = useAuth();
   const [step, setStep] = useState(1);
   const [selectedHospital, setSelectedHospital] = useState(null);
   const [selectedSpecialization, setSelectedSpecialization] = useState(null);
@@ -94,12 +97,34 @@ export default function HospitalBookingFlow() {
   const [isProcessing, setIsProcessing] = useState(false);
 
   const dates = getNextSevenDays();
+  const tokenNumberRandom = `# A-${Math.floor(Math.random() * 100)}`
 
   const handlePaymentSubmit = () => {
     if (!selectedPayment) return;
     setIsProcessing(true);
     setTimeout(() => {
       setIsProcessing(false);
+      
+      // Store appointment data in localStorage
+      const appointmentData = {
+        id: Date.now(), // Unique ID for the appointment
+        tokenNumber:tokenNumberRandom, // You can generate this dynamically
+        patientName: user?.name || user?.username || 'Guest User',
+        hospital: selectedHospital,
+        specialization: selectedSpecialization,
+        doctor: selectedDoctor,
+        date: selectedDate,
+        paymentMethod: selectedPayment,
+        consultationFee: selectedDoctor?.consultationFee,
+        bookingDate: new Date().toISOString(),
+        status: 'confirmed'
+      };
+      
+      // Get existing appointments or initialize empty array
+      const existingAppointments = JSON.parse(localStorage.getItem('appointmentData') || '[]');
+      existingAppointments.push(appointmentData);
+      localStorage.setItem('appointmentData', JSON.stringify(existingAppointments));
+      
       setStep(5);
     }, 1500);
   };
@@ -400,7 +425,7 @@ export default function HospitalBookingFlow() {
                     <h3 className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-2">Token Number</h3>
                     {/* Distinct Color: Gradient Text */}
                     <p className="text-5xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-teal-500">
-                      #A-42
+                      {tokenNumberRandom}
                     </p>
                   </div>
                   <div className="text-right">
@@ -454,9 +479,9 @@ export default function HospitalBookingFlow() {
                 <button onClick={() => window.print()} className="flex-1 py-3 bg-white border border-slate-200 text-slate-700 rounded-xl font-bold hover:bg-slate-100 transition-all flex items-center justify-center gap-2 text-sm">
                   <Printer size={16} /> Save Ticket
                 </button>
-                <button onClick={resetFlow} className="flex-1 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-all text-sm shadow-lg shadow-indigo-100">
-                  Book Another
-                </button>
+                <Link to='/profile' onClick={()=>{}} className="flex-1 py-3 bg-blue-800 text-center text-shadow-cyan-50 rounded-xl font-bold hover:bg-indigo-700 transition-all text-sm shadow-lg shadow-indigo-100">
+                  Done
+                </Link>
               </div>
             </div>
           </div>
