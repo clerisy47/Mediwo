@@ -34,7 +34,7 @@ export const AuthProvider = ({ children }) => {
     } 
 
     const userData = {
-      username:username.toLowerCase() == "patient" ? "Bhaskar Bhatta" : "Dr. Nikolas Bhusal",
+      username:username.toLowerCase() == "patient" ? "Bhaskar Bhatta" : "Dr. Sagar Regmi",
       role: userRole,
       name: username.charAt(0).toUpperCase() + username.slice(1),
       phone: '+9806028752',

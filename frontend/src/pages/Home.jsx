@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Stethoscope, User, FileText, Calendar, Clock, Heart } from 'lucide-react';
+import { Clock, FileText, Calendar, Stethoscope, ShieldCheck, Zap, MessageSquare, Brain, Heart, User } from 'lucide-react';
 import Navbar from '../components/Navbar';
 
 const Home = () => {
@@ -10,26 +10,47 @@ const Home = () => {
 
   const features = [
     {
-      icon: <FileText className="w-8 h-8" />,
-      title: 'Medical Records',
-      description: 'Upload and manage your medical documents securely'
+      icon: <FileText className="w-8 h-8 text-blue-600" />,
+      title: 'Unified Health Portfolio (EII)',
+      description: 'Instantly upload and securely store all scattered medical documents (reports, prescriptions, scans) to create a single, comprehensive digital record accessible 24/7.',
     },
     {
-      icon: <Stethoscope className="w-8 h-8" />,
-      title: 'Doctor Access',
-      description: 'Doctors can view and manage patient records efficiently'
+      icon: <Calendar className="w-8 h-8 text-indigo-600" />,
+      title: 'Digital Queue Management',
+      description: 'Secure your spot instantly, generate your digital token number, and track your live queue status and estimated wait time directly from your phone.',
+      highlight: true // Primary patient benefit feature
     },
     {
-      icon: <Calendar className="w-8 h-8" />,
-      title: 'Appointment Bookings',
-      description: 'Secure your appointment, generate your digital token number, and track your live queue status instantly.',
-      path: '/appointment', // This links to your new feature
-      highlight: true // Optional flag to style it differently
+      icon: <MessageSquare className="w-8 h-8 text-green-600" />,
+      title: 'Adaptive AI Intake (Pre-Consultation)',
+      description: 'While you wait, interact with an intelligent, dynamic questionnaire that gathers structured symptoms and history, saving valuable consultation time.',
+    },
+
+    {
+      icon: <Brain className="w-8 h-8 text-red-600" />,
+      title: 'Intelligent Clinical Summary',
+      description: 'The AI synthesizes your current symptoms with critical historical data (allergies, failed treatments) into a concise, physician-ready report, reducing diagnostic error risk.',
+      highlight: true // Primary doctor benefit feature
     },
     {
-      icon: <Clock className="w-8 h-8" />,
-      title: '24/7 Access',
-      description: 'Access your records anytime, anywhere'
+      icon: <Stethoscope className="w-8 h-8 text-purple-600" />,
+      title: 'AI-Assisted Documentation Co-Pilot',
+      description: 'Utilizes medical speech-to-text to draft structured SOAP notes automatically, drastically cutting down on post-consultation charting and administrative work.',
+    },
+    {
+      icon: <Zap className="w-8 h-8 text-yellow-600" />,
+      title: 'Context-Aware Smart Autocomplete',
+      description: 'The system learns from doctor-patient interactions (RL) to provide highly accurate, context-relevant suggestions for medication, codes, and treatment plans.',
+    },
+    {
+      icon: <ShieldCheck className="w-8 h-8 text-gray-600" />,
+      title: 'Secure & Compliant Data Handling',
+      description: 'Ensures enterprise-grade security with end-to-end encryption, strict access control, and adherence to medical privacy standards (e.g., HIPAA feasibility).',
+    },
+    {
+      icon: <Clock className="w-8 h-8 text-pink-600" />,
+      title: 'Continuous System Improvement (RL)',
+      description: 'The platform self-improves by learning from doctor feedback (acceptance/modification of suggestions) ensuring smarter templates and higher accuracy over time.',
     }
   ];
 
@@ -48,7 +69,7 @@ const Home = () => {
           <p className="text-xl text-gray-600 max-w-2xl mx-auto mb-8">
             Your trusted Hospital Management System for seamless healthcare management
           </p>
-          
+
           {user ? (
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <button
@@ -90,7 +111,7 @@ const Home = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
           {/* Patient Card */}
           <div className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition duration-200">
-            <div className="h-48 bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center">
+            <div className="h-48 bg-linear-to-br from-blue-400 to-blue-600 flex items-center justify-center">
               <User className="w-24 h-24 text-white opacity-90" />
             </div>
             <div className="p-6">
@@ -111,7 +132,7 @@ const Home = () => {
 
           {/* Doctor Card */}
           <div className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition duration-200">
-            <div className="h-48 bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center">
+            <div className="h-48 bg-linear-to-br from-green-400 to-green-600 flex items-center justify-center">
               <Stethoscope className="w-24 h-24 text-white opacity-90" />
             </div>
             <div className="p-6">
@@ -148,4 +169,3 @@ const Home = () => {
 };
 
 export default Home;
-
