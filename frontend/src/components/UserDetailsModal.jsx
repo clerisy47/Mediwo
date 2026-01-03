@@ -9,7 +9,6 @@ const UserDetailsModal = ({ isOpen, onClose }) => {
     location: user?.location || '',
     religion: user?.religion || '',
     nationality: user?.nationality || '',
-    address: user?.address || '',
     emergencyContact: user?.emergencyContact || '',
     bloodGroup: user?.bloodGroup || '',
     position: user?.position || '',
@@ -24,7 +23,6 @@ const UserDetailsModal = ({ isOpen, onClose }) => {
         location: user.location || '',
         religion: user.religion || '',
         nationality: user.nationality || '',
-        address: user.address || '',
         emergencyContact: user.emergencyContact || '',
         bloodGroup: user.bloodGroup || '',
         position: user.position || '',
@@ -168,21 +166,6 @@ const UserDetailsModal = ({ isOpen, onClose }) => {
                 <option value="O+">O+</option>
                 <option value="O-">O-</option>
               </select>
-            </div>
-
-            <div className="md:col-span-2">
-              <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-2">
-                Address
-              </label>
-              <textarea
-                id="address"
-                name="address"
-                value={formData.address}
-                onChange={handleChange}
-                rows="3"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                placeholder="Enter full address"
-              />
             </div>
 
             <div className="md:col-span-2">

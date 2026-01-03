@@ -23,7 +23,7 @@ const Navbar = () => {
     <header className="bg-white shadow-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center py-4">
-          <Link to="/profile" className="text-2xl font-bold text-gray-800">
+          <Link to="/" className="text-2xl font-bold text-gray-800">
             Hospital Management System
           </Link>
 
@@ -31,13 +31,21 @@ const Navbar = () => {
             {
               user && (<>
                 {
-              user?.role === 'PATIENT' ? (
+                  user?.role === 'PATIENT' ? (
+                    <>
+                <Link
+                  to="/appointment"
+                  className={`${isActive('/appointment')} transition`}
+                >
+                  Appointment
+                </Link> 
                 <Link
                   to="/upload"
                   className={`${isActive('/upload')} transition`}
                 >
                   Upload
-                </Link>
+                      </Link>
+                      </>
               )
                 : (
                   <Link
