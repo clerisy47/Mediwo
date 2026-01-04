@@ -1,120 +1,40 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Search, User, Calendar, Activity, ArrowRight } from 'lucide-react';
 
+const API_URL = process.env.VITE_API_URL || 'http://127.0.0.1:8000';
+
 const Patients = () => {
   const { user } = useAuth();
+  const [patients, setPatients] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('name');
   const [sortOrder, setSortOrder] = useState('asc');
 
-  // Mock patient data
-  const mockPatients = [
-    {
-      id: 1,
-      name: 'John Doe',
-      age: 45,
-      gender: 'Male',
-      condition: 'Hypertension',
-      admissionDate: '2024-01-15',
-      status: 'Active',
-      phone: '+1-234-567-8901',
-      bloodGroup: 'O+',
-      lastVisit: '2024-01-20'
-    },
-    {
-      id: 2,
-      name: 'Jane Smith',
-      age: 32,
-      gender: 'Female',
-      condition: 'Diabetes Type 2',
-      admissionDate: '2024-01-20',
-      status: 'Active',
-      phone: '+1-234-567-8902',
-      bloodGroup: 'A+',
-      lastVisit: '2024-01-22'
-    },
-    {
-      id: 3,
-      name: 'Bob Johnson',
-      age: 58,
-      gender: 'Male',
-      condition: 'Cardiac Arrhythmia',
-      admissionDate: '2024-01-18',
-      status: 'Active',
-      phone: '+1-234-567-8903',
-      bloodGroup: 'B+',
-      lastVisit: '2024-01-21'
-    },
-    {
-      id: 4,
-      name: 'Sarah Williams',
-      age: 28,
-      gender: 'Female',
-      condition: 'Asthma',
-      admissionDate: '2024-01-10',
-      status: 'Recovered',
-      phone: '+1-234-567-8904',
-      bloodGroup: 'AB+',
-      lastVisit: '2024-01-19'
-    },
-    {
-      id: 5,
-      name: 'Michael Brown',
-      age: 65,
-      gender: 'Male',
-      condition: 'Chronic Kidney Disease',
-      admissionDate: '2024-01-12',
-      status: 'Active',
-      phone: '+1-234-567-8905',
-      bloodGroup: 'O-',
-      lastVisit: '2024-01-23'
-    },
-    {
-      id: 6,
-      name: 'Emily Davis',
-      age: 40,
-      gender: 'Female',
-      condition: 'Migraine',
-      admissionDate: '2024-01-14',
-      status: 'Active',
-      phone: '+1-234-567-8906',
-      bloodGroup: 'A-',
-      lastVisit: '2024-01-18'
-    },
-    {
-      id: 7,
-      name: 'David Wilson',
-      age: 52,
-      gender: 'Male',
-      condition: 'Osteoarthritis',
-      admissionDate: '2024-01-16',
-      status: 'Active',
-      phone: '+1-234-567-8907',
-      bloodGroup: 'B-',
-      lastVisit: '2024-01-20'
-    },
-    {
-      id: 8,
-      name: 'Lisa Anderson',
-      age: 35,
-      gender: 'Female',
-      condition: 'Anemia',
-      admissionDate: '2024-01-11',
-      status: 'Recovered',
-      phone: '+1-234-567-8908',
-      bloodGroup: 'O+',
-      lastVisit: '2024-01-17'
+  useEffect(() => {
+    const fetchPatients = async () => {
+      try {
+        const response = await fetch(`${API_URL}/patients`);
+        if (response.ok) {
+          const data = await response.json();
+          setPatients(data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch patients:', error);
+      }
+    };
+
+    if (user && user.role === 'DOCTOR') {
+      fetchPatients();
     }
-  ];
+  }, [user]);
 
   // Filter and sort patients
   const filteredAndSortedPatients = useMemo(() => {
-    let filtered = mockPatients.filter(patient =>
+    let filtered = patients.filter(patient =>
       patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      patient.condition.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      patient.phone.includes(searchTerm)
+      patient.condition.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     filtered.sort((a, b) => {
@@ -137,7 +57,7 @@ const Patients = () => {
     });
 
     return filtered;
-  }, [searchTerm, sortBy, sortOrder]);
+  }, [searchTerm, sortBy, sortOrder, patients]);
 
   const handleSort = (field) => {
     if (sortBy === field) {
@@ -187,7 +107,7 @@ const Patients = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600 mb-1">Total Patients</p>
-                <p className="text-3xl font-bold text-gray-900">{mockPatients.length}</p>
+                <p className="text-3xl font-bold text-gray-900">{patients.length}</p>
               </div>
               <User className="w-10 h-10 text-blue-600" />
             </div>
@@ -197,7 +117,7 @@ const Patients = () => {
               <div>
                 <p className="text-sm text-gray-600 mb-1">Active Cases</p>
                 <p className="text-3xl font-bold text-green-600">
-                  {mockPatients.filter(p => p.status === 'Active').length}
+                  {patients.filter(p => p.status === 'Active').length}
                 </p>
               </div>
               <Activity className="w-10 h-10 text-green-600" />
@@ -208,7 +128,7 @@ const Patients = () => {
               <div>
                 <p className="text-sm text-gray-600 mb-1">Recovered</p>
                 <p className="text-3xl font-bold text-blue-600">
-                  {mockPatients.filter(p => p.status === 'Recovered').length}
+                  {patients.filter(p => p.status === 'Recovered').length}
                 </p>
               </div>
               <Calendar className="w-10 h-10 text-blue-600" />
@@ -219,7 +139,7 @@ const Patients = () => {
               <div>
                 <p className="text-sm text-gray-600 mb-1">This Month</p>
                 <p className="text-3xl font-bold text-purple-600">
-                  {mockPatients.filter(p => {
+                  {patients.filter(p => {
                     const date = new Date(p.admissionDate);
                     const now = new Date();
                     return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
@@ -334,7 +254,7 @@ const Patients = () => {
                     >
                       <td className="px-6 py-4 whitespace-nowrap">
                         <Link
-                          to={`/patient/${getPatientSlug(patient.name)}`}
+                          to={`/patient/${patient.id}`}
                           className="text-sm font-semibold text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-2"
                         >
                           {patient.name}
@@ -365,7 +285,7 @@ const Patients = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
                         <Link
-                          to={`/patient/${getPatientSlug(patient.name)}`}
+                          to={`/patient/${patient.id}`}
                           className="text-blue-600 hover:text-blue-800 font-medium"
                         >
                           View Details
@@ -381,7 +301,7 @@ const Patients = () => {
 
         {/* Results count */}
         <div className="mt-4 text-sm text-gray-600">
-          Showing {filteredAndSortedPatients.length} of {mockPatients.length} patients
+          Showing {filteredAndSortedPatients.length} of {patients.length} patients
         </div>
       </div>
     </div>

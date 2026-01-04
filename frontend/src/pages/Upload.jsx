@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useSnackbar } from 'notistack';
 
+const API_URL = process.env.VITE_API_URL || 'http://127.0.0.1:8000';
+
 const Upload = () => {
   const { enqueueSnackbar } = useSnackbar();
   
@@ -43,22 +45,16 @@ const Upload = () => {
 
       setError('');
       
-      // Convert image to base64 for localStorage storage
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormData({
-          ...formData,
-          image: reader.result,
-          imagePreview: reader.result
-        });
-      };
-      reader.readAsDataURL(file);
-      enqueueSnackbar('Image uploaded successfully',
-        { variant: 'success' });
+      setFormData({
+        ...formData,
+        image: file,
+        imagePreview: URL.createObjectURL(file)
+      });
+      enqueueSnackbar('Image selected', { variant: 'success' });
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setSuccess(false);
@@ -68,40 +64,40 @@ const Upload = () => {
       return;
     }
 
-    // Get existing patientData from localStorage
-    const existingData = localStorage.getItem('patientData');
-    const patientDataArray = existingData ? JSON.parse(existingData) : [];
+    const data = new FormData();
+    data.append('file', formData.image);
+    data.append('title', formData.title);
+    data.append('description', formData.description);
+    data.append('date', formData.date);
+    data.append('patientName', formData.patientName || user?.name || 'Unknown');
+    data.append('reportType', formData.reportType || 'General');
+    data.append('uploadedBy', user?.username || 'Unknown');
 
-    // Create new patient data entry
-    const newEntry = {
-      id: Date.now(),
-      title: formData.title,
-      description: formData.description || '',
-      date: formData.date || new Date().toISOString(),
-      patientName: formData.patientName || user?.name || 'Unknown',
-      reportType: formData.reportType || 'General',
-      image: formData.image, // Base64 encoded image
-      uploadedBy: user?.username || 'Unknown',
-      uploadedAt: new Date().toISOString()
-    };
+    try {
+      const response = await fetch(`${API_URL}/upload`, {
+        method: 'POST',
+        body: data,
+      });
 
-    // Add to array and save to localStorage
-    patientDataArray.push(newEntry);
-    localStorage.setItem('patientData', JSON.stringify(patientDataArray));
-
-    // Reset form
-    setFormData({
-      title: '',
-      description: '',
-      date: '',
-      patientName: '',
-      reportType: '',
-      image: null,
-      imagePreview: null
-    });
-
-    setSuccess(true);
-    setTimeout(() => setSuccess(false), 3000);
+      if (response.ok) {
+        setSuccess(true);
+        setFormData({
+          title: '',
+          description: '',
+          date: '',
+          patientName: '',
+          reportType: '',
+          image: null,
+          imagePreview: null
+        });
+        setTimeout(() => setSuccess(false), 3000);
+      } else {
+        setError('Failed to upload report. Please try again.');
+      }
+    } catch (error) {
+      setError('An error occurred. Please try again later.');
+      console.error('Upload error:', error);
+    }
   };
 
   return (
@@ -248,7 +244,7 @@ const Upload = () => {
                     title: '',
                     description: '',
                     date: '',
-                    patientName: '',
+_                    patientName: '',
                     reportType: '',
                     image: null,
                     imagePreview: null

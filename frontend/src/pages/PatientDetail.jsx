@@ -1,119 +1,37 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { ArrowLeft, User, Calendar, Phone, Activity, Droplet, FileText, Clock } from 'lucide-react';
 
+const API_URL = process.env.VITE_API_URL || 'http://127.0.0.1:8000';
+
 const PatientDetail = () => {
-  const { patientName } = useParams();
+  const { patientId } = useParams();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [patient, setPatient] = useState(null);
 
-  // Mock patient database - in real app, this would come from an API
-  const mockPatients = {
-    'john-doe': {
-      id: 1,
-      name: 'John Doe',
-      age: 45,
-      gender: 'Male',
-      condition: 'Hypertension',
-      admissionDate: '2024-01-15',
-      status: 'Active',
-      phone: '+1-234-567-8901',
-      email: 'john.doe@email.com',
-      bloodGroup: 'O+',
-      lastVisit: '2024-01-20',
-      address: '123 Main Street, City, State 12345',
-      emergencyContact: 'Jane Doe - +1-234-567-8900',
-      medicalHistory: [
-        { date: '2024-01-20', description: 'Blood pressure check - Normal', doctor: 'Dr. Albert Einstein' },
-        { date: '2024-01-15', description: 'Initial consultation for hypertension', doctor: 'Dr. Albert Einstein' },
-        { date: '2023-12-10', description: 'Routine checkup', doctor: 'Dr. Albert Einstein' }
-      ],
-      medications: [
-        { name: 'Lisinopril', dosage: '10mg', frequency: 'Once daily', startDate: '2024-01-15' },
-        { name: 'Amlodipine', dosage: '5mg', frequency: 'Once daily', startDate: '2024-01-15' }
-      ],
-      labResults: [
-        { test: 'Blood Pressure', result: '130/85 mmHg', date: '2024-01-20', status: 'Normal' },
-        { test: 'Cholesterol', result: '180 mg/dL', date: '2024-01-20', status: 'Slightly Elevated' },
-        { test: 'Blood Sugar', result: '95 mg/dL', date: '2024-01-20', status: 'Normal' }
-      ]
-    },
-    'jane-smith': {
-      id: 2,
-      name: 'Jane Smith',
-      age: 32,
-      gender: 'Female',
-      condition: 'Diabetes Type 2',
-      admissionDate: '2024-01-20',
-      status: 'Active',
-      phone: '+1-234-567-8902',
-      email: 'jane.smith@email.com',
-      bloodGroup: 'A+',
-      lastVisit: '2024-01-22',
-      address: '456 Oak Avenue, City, State 12346',
-      emergencyContact: 'John Smith - +1-234-567-8901',
-      medicalHistory: [
-        { date: '2024-01-22', description: 'Blood sugar monitoring - Controlled', doctor: 'Dr. Albert Einstein' },
-        { date: '2024-01-20', description: 'Diabetes management consultation', doctor: 'Dr. Albert Einstein' }
-      ],
-      medications: [
-        { name: 'Metformin', dosage: '500mg', frequency: 'Twice daily', startDate: '2024-01-20' },
-        { name: 'Insulin Glargine', dosage: '20 units', frequency: 'Once daily at bedtime', startDate: '2024-01-20' }
-      ],
-      labResults: [
-        { test: 'HbA1c', result: '7.2%', date: '2024-01-22', status: 'Controlled' },
-        { test: 'Fasting Blood Sugar', result: '110 mg/dL', date: '2024-01-22', status: 'Good' },
-        { test: 'Cholesterol', result: '195 mg/dL', date: '2024-01-22', status: 'Normal' }
-      ]
-    },
-    'bob-johnson': {
-      id: 3,
-      name: 'Bob Johnson',
-      age: 58,
-      gender: 'Male',
-      condition: 'Cardiac Arrhythmia',
-      admissionDate: '2024-01-18',
-      status: 'Active',
-      phone: '+1-234-567-8903',
-      email: 'bob.johnson@email.com',
-      bloodGroup: 'B+',
-      lastVisit: '2024-01-21',
-      address: '789 Pine Road, City, State 12347',
-      emergencyContact: 'Mary Johnson - +1-234-567-8902',
-      medicalHistory: [
-        { date: '2024-01-21', description: 'ECG monitoring - Irregular rhythm detected', doctor: 'Dr. Albert Einstein' },
-        { date: '2024-01-18', description: 'Cardiac evaluation for arrhythmia', doctor: 'Dr. Albert Einstein' }
-      ],
-      medications: [
-        { name: 'Metoprolol', dosage: '50mg', frequency: 'Twice daily', startDate: '2024-01-18' },
-        { name: 'Warfarin', dosage: '5mg', frequency: 'Once daily', startDate: '2024-01-18' }
-      ],
-      labResults: [
-        { test: 'ECG', result: 'Atrial Fibrillation', date: '2024-01-21', status: 'Abnormal' },
-        { test: 'Echocardiogram', result: 'Normal ejection fraction', date: '2024-01-19', status: 'Normal' }
-      ]
+  useEffect(() => {
+    const fetchPatient = async () => {
+      try {
+        const response = await fetch(`${API_URL}/patients/${patientId}`);
+        if (response.ok) {
+          const data = await response.json();
+          setPatient(data);
+        } else {
+          // Handle patient not found, e.g., redirect or show an error
+          navigate('/patients');
+        }
+      } catch (error) {
+        console.error('Failed to fetch patient details:', error);
+      }
+    };
+
+    if (user && user.role === 'DOCTOR') {
+      fetchPatient();
     }
-  };
+  }, [user, patientId, navigate]);
 
-  // Get patient data or use default
-  const patient = mockPatients[patientName] || {
-    name: patientName?.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') || 'Unknown Patient',
-    age: 'N/A',
-    gender: 'N/A',
-    condition: 'N/A',
-    admissionDate: 'N/A',
-    status: 'Active',
-    phone: 'N/A',
-    email: 'N/A',
-    bloodGroup: 'N/A',
-    lastVisit: 'N/A',
-    address: 'N/A',
-    emergencyContact: 'N/A',
-    medicalHistory: [],
-    medications: [],
-    labResults: []
-  };
 
   const getStatusBadge = (status) => {
     const styles = {
@@ -143,6 +61,14 @@ const PatientDetail = () => {
           <p className="text-gray-600 mb-4">Only doctors can access this page.</p>
           <Link to="/patients" className="text-blue-600 hover:underline">Go back to Patients</Link>
         </div>
+      </div>
+    );
+  }
+
+  if (!patient) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-xl">Loading patient details...</div>
       </div>
     );
   }
@@ -299,7 +225,7 @@ const PatientDetail = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                         {med.name}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                      <td className="px-6 py-4 whitespace-nowrawrap text-sm text-gray-600">
                         {med.dosage}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
@@ -371,4 +297,3 @@ const PatientDetail = () => {
 };
 
 export default PatientDetail;
-

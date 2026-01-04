@@ -69,7 +69,7 @@ function AppRoutes() {
           }
         />
         <Route
-          path="/patient/:patientName"
+          path="/patient/:patientId"
           element={
             <PrivateRoute>
               <PatientDetail />

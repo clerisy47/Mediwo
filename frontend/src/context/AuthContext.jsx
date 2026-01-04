@@ -2,6 +2,8 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const AuthContext = createContext();
 
+const API_URL = process.env.VITE_API_URL || 'http://127.0.0.1:8000';
+
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
@@ -23,51 +25,56 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
-  const login = (username, password) => {
-    // Dummy authentication logic
-    let userRole = 'PATIENT'; // default role
-    
-    if (username === 'doctor' && password === 'doctor') {
-      userRole = 'DOCTOR';
-    } else if (username === 'patient' && password === 'patient') {
-      userRole = 'PATIENT';
-    } 
+  const login = async (username, password) => {
+    const response = await fetch(`${API_URL}/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ username, password }),
+    });
 
-    const userData = {
-      username:username.toLowerCase() == "patient" ? "Bhaskar Bhatta" : "Dr. Sagar Regmi",
-      role: userRole,
-      name: username.charAt(0).toUpperCase() + username.slice(1),
-      phone: '+9806028752',
-      position: userRole,
-      hospitalName: 'B&C Hospital',
-      additionalDetailsCompleted: true, // Demo users don't need to fill additional details
-      patients: userRole === 'DOCTOR' ? [
-        { id: 1, name: 'John Doe', age: 45, condition: 'Hypertension', admissionDate: '2024-01-15' },
-        { id: 2, name: 'Jane Smith', age: 32, condition: 'Diabetes', admissionDate: '2024-01-20' },
-        { id: 3, name: 'Bob Johnson', age: 58, condition: 'Cardiac', admissionDate: '2024-01-18' },
-      ] : []
-    };
-
-    setUser(userData);
-    localStorage.setItem('user', JSON.stringify(userData));
-    return true;
+    if (response.ok) {
+      const userData = await response.json();
+      setUser(userData);
+      localStorage.setItem('user', JSON.stringify(userData));
+      return true;
+    }
+    return false;
   };
 
-  const register = (userData) => {
-    const newUser = {
-      ...userData,
-      role: userData.role || 'PATIENT',
-      patients: []
-    };
-    setUser(newUser);
-    localStorage.setItem('user', JSON.stringify(newUser));
-    return true;
+  const register = async (userData) => {
+    const response = await fetch(`${API_URL}/register`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(userData),
+    });
+
+    if (response.ok) {
+      const newUser = await response.json();
+      setUser(newUser);
+      localStorage.setItem('user', JSON.stringify(newUser));
+      return true;
+    }
+    return false;
   };
 
-  const updateUser = (updatedData) => {
-    const updatedUser = { ...user, ...updatedData };
-    setUser(updatedUser);
-    localStorage.setItem('user', JSON.stringify(updatedUser));
+  const updateUser = async (updatedData) => {
+    const response = await fetch(`${API_URL}/user`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(updatedData),
+    });
+
+    if (response.ok) {
+      const updatedUser = await response.json();
+      setUser(updatedUser);
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+    }
   };
 
   const logout = () => {
