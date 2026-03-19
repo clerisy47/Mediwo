@@ -244,7 +244,7 @@ const Upload = () => {
                     title: '',
                     description: '',
                     date: '',
-_                    patientName: '',
+                    patientName: '',
                     reportType: '',
                     image: null,
                     imagePreview: null
