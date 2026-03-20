@@ -22,6 +22,7 @@ export interface MedicalSummary {
   medications: string[];
   keyHistory: string[];
   generatedAt: string;
+  clinicalNarrative?: string;
 }
 
 export interface QueueStatus {

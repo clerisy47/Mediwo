@@ -1,8 +1,13 @@
 import { useRef } from 'react';
 import type { UploadedReport } from '../../types/models';
 
+export interface UploadedReportPayload {
+  report: UploadedReport;
+  file: File;
+}
+
 interface FileUploaderProps {
-  onUpload: (files: UploadedReport[]) => void;
+  onUpload: (files: UploadedReportPayload[]) => void;
   disabled?: boolean;
 }
 
@@ -16,12 +21,16 @@ export function FileUploader({ onUpload, disabled = false }: FileUploaderProps) 
       return;
     }
 
-    const nextFiles: UploadedReport[] = Array.from(selected).map((file) => ({
-      id: crypto.randomUUID(),
-      name: file.name,
-      uploadedAt: new Date().toISOString().slice(0, 10),
-      type: file.type.includes('image') ? 'Imaging' : 'Clinical Document',
-    }));
+    const nextFiles: UploadedReportPayload[] = Array.from(selected).map((file) => {
+      const report: UploadedReport = {
+        id: crypto.randomUUID(),
+        name: file.name,
+        uploadedAt: new Date().toISOString().slice(0, 10),
+        type: file.type.includes('image') ? 'Imaging' : 'Clinical Document',
+      };
+
+      return { report, file };
+    });
 
     onUpload(nextFiles);
 

@@ -1,84 +1,103 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Card } from '../../components/ui/Card';
 import { PageHeader } from '../../components/ui/PageHeader';
-
-interface IntakeQuestion {
-  prompt: string;
-  options: string[];
-}
+import {
+  completeIntakeSession,
+  sendIntakeMessage,
+  startIntakeSession,
+} from '../../services/backendApi';
 
 interface ChatMessage {
   role: 'ai' | 'patient';
   message: string;
 }
 
-const questions: IntakeQuestion[] = [
-  {
-    prompt: 'What is the main symptom you want to discuss today?',
-    options: ['Dry cough', 'Headache', 'Fever', 'Stomach discomfort'],
-  },
-  {
-    prompt: 'How long have these symptoms been present?',
-    options: ['1-2 days', '3-5 days', '1 week', 'More than 2 weeks'],
-  },
-  {
-    prompt: 'How severe are your symptoms right now?',
-    options: ['Mild', 'Moderate', 'Severe'],
-  },
-];
-
 export function IntakePage() {
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      role: 'ai',
-      message: 'Hi, I am your intake assistant. I will ask a few questions to prepare your consultation.',
-    },
-    { role: 'ai', message: questions[0].prompt },
-  ]);
-  const [questionIndex, setQuestionIndex] = useState(0);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [textInput, setTextInput] = useState('');
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [busy, setBusy] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [completed, setCompleted] = useState(false);
+  const [summary, setSummary] = useState<string | null>(null);
 
-  const currentQuestion = questions[questionIndex];
+  useEffect(() => {
+    async function bootstrap() {
+      try {
+        setBusy(true);
+        setError(null);
 
-  const appendPatientResponse = (value: string) => {
-    if (questionIndex === 2 && value === 'Severe') {
-      setMessages((prev) => [
-        ...prev,
-        { role: 'patient', message: value },
-        { role: 'ai', message: 'Do you currently have chest pain or shortness of breath?' },
-      ]);
-      setQuestionIndex(questions.length);
+        const response = await startIntakeSession();
+        setSessionId(response.sessionId);
+        setMessages([{ role: 'ai', message: response.assistantMessage }]);
+      } catch (requestError) {
+        const message =
+          requestError instanceof Error ? requestError.message : 'Unable to start intake session.';
+        setError(message);
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    void bootstrap();
+  }, []);
+
+  const submitMessage = async (value: string) => {
+    if (!sessionId || busy || completed) {
       return;
     }
 
-    const nextIndex = questionIndex + 1;
+    setMessages((prev) => [...prev, { role: 'patient', message: value }]);
+    setTextInput('');
+    setBusy(true);
+    setError(null);
 
-    if (nextIndex >= questions.length) {
+    try {
+      const response = await sendIntakeMessage(sessionId, value);
+      setMessages((prev) => [...prev, { role: 'ai', message: response.assistantMessage }]);
+    } catch (requestError) {
+      const message = requestError instanceof Error ? requestError.message : 'Failed to send message.';
+      setError(message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const finishIntake = async () => {
+    if (!sessionId || busy || completed) {
+      return;
+    }
+
+    setBusy(true);
+    setError(null);
+
+    try {
+      const response = await completeIntakeSession(sessionId);
+      setSummary(response.summary);
       setCompleted(true);
       setMessages((prev) => [
         ...prev,
-        { role: 'patient', message: value },
-        { role: 'ai', message: 'Thank you. Your pre-consultation intake is complete and shared with your doctor.' },
+        {
+          role: 'ai',
+          message: 'Thank you. Your pre-consultation intake is complete and the doctor summary is ready.',
+        },
       ]);
-      return;
+    } catch (requestError) {
+      const message =
+        requestError instanceof Error ? requestError.message : 'Failed to generate intake summary.';
+      setError(message);
+    } finally {
+      setBusy(false);
     }
-
-    setQuestionIndex(nextIndex);
-    setMessages((prev) => [
-      ...prev,
-      { role: 'patient', message: value },
-      { role: 'ai', message: questions[nextIndex].prompt },
-    ]);
   };
 
-  const submitText = () => {
+  const submitText = async () => {
     const value = textInput.trim();
     if (!value) {
       return;
     }
-    setTextInput('');
-    appendPatientResponse(value);
+
+    await submitMessage(value);
   };
 
   return (
@@ -90,6 +109,10 @@ export function IntakePage() {
 
       <Card className="chat-card">
         <div className="chat-thread">
+          {busy && messages.length === 0 && (
+            <div className="chat-bubble chat-ai">Starting your intake session...</div>
+          )}
+
           {messages.map((message, index) => (
             <div
               key={`${message.role}-${index}`}
@@ -98,22 +121,9 @@ export function IntakePage() {
               {message.message}
             </div>
           ))}
-        </div>
 
-        {!completed && currentQuestion && (
-          <div className="quick-options">
-            {currentQuestion.options.map((option) => (
-              <button
-                type="button"
-                key={option}
-                className="btn btn-ghost btn-sm"
-                onClick={() => appendPatientResponse(option)}
-              >
-                {option}
-              </button>
-            ))}
-          </div>
-        )}
+          {error && <div className="chat-bubble chat-ai">Error: {error}</div>}
+        </div>
 
         {!completed && (
           <div className="chat-input-row">
@@ -122,10 +132,35 @@ export function IntakePage() {
               value={textInput}
               onChange={(event) => setTextInput(event.target.value)}
               placeholder="Type your response"
+              disabled={busy || !sessionId}
             />
-            <button type="button" className="btn btn-primary btn-sm" onClick={submitText}>
+            <button
+              type="button"
+              className="btn btn-primary btn-sm"
+              onClick={() => {
+                void submitText();
+              }}
+              disabled={busy || !sessionId}
+            >
               Send
             </button>
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              onClick={() => {
+                void finishIntake();
+              }}
+              disabled={busy || !sessionId}
+            >
+              Finish
+            </button>
+          </div>
+        )}
+
+        {completed && summary && (
+          <div className="summary-section">
+            <h4>Doctor Summary</h4>
+            <p>{summary}</p>
           </div>
         )}
       </Card>

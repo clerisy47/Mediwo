@@ -14,14 +14,26 @@ load_dotenv()
 api_keys = os.getenv("GOOGLE_API_KEY", "").split(",")
 api_keys = [key.strip() for key in api_keys if key.strip()]
 
-# Create primary model and fallback models
-primary_model = ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0, google_api_key=api_keys[0])
-fallback_models = [
-    ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0, google_api_key=key)
-    for key in api_keys[1:]
-]
+llm = None
 
-llm = primary_model.with_fallbacks(fallback_models)
+
+def _get_llm():
+    global llm
+
+    if llm is not None:
+        return llm
+
+    if not api_keys:
+        raise RuntimeError("GOOGLE_API_KEY is not configured.")
+
+    primary_model = ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0, google_api_key=api_keys[0])
+    fallback_models = [
+        ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0, google_api_key=key)
+        for key in api_keys[1:]
+    ]
+
+    llm = primary_model.with_fallbacks(fallback_models)
+    return llm
 
 def summarize_with_ocr(file_path):
     loader = UnstructuredPDFLoader(
@@ -41,10 +53,10 @@ def summarize_with_ocr(file_path):
         HumanMessagePromptTemplate.from_template("DOCUMENT CONTENT:\n{text}"),
     ])
     
-    chain = prompt | llm | StrOutputParser()
+    chain = prompt | _get_llm() | StrOutputParser()
     
     full_text = "\n".join([doc.page_content for doc in docs])
-    print("📝 Generating summary...")
+    print("Generating summary...")
     summary = chain.invoke({"text": full_text})
     
     return summary

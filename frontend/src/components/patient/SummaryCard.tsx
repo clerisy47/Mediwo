@@ -41,6 +41,13 @@ export function SummaryCard({ summary, updateLabel }: SummaryCardProps) {
           ))}
         </ul>
       </section>
+
+      {summary.clinicalNarrative && (
+        <section className="summary-section">
+          <h4>Clinical Narrative</h4>
+          <p>{summary.clinicalNarrative}</p>
+        </section>
+      )}
     </Card>
   );
 }

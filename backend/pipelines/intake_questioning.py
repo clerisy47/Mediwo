@@ -7,13 +7,7 @@ load_dotenv()
 api_keys = os.getenv("GOOGLE_API_KEY", "").split(",")
 api_keys = [key.strip() for key in api_keys if key.strip()]
 
-primary_model = ChatGoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=api_keys[0])
-fallback_models = [
-    ChatGoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=key)
-    for key in api_keys[1:]
-]
-
-llm = primary_model.with_fallbacks(fallback_models)
+llm = None
 
 SYSTEM_PROMPT = (
     "You are 'Mediwo Assistant,' an intelligent preliminary medical intake tool. "
@@ -29,39 +23,83 @@ SUMMARY_PROMPT = (
     "or prior treatments. Use a structured clinical tone."
 )
 
-def run_mediwo_chatbot():
+
+def _get_llm():
+    global llm
+
+    if llm is not None:
+        return llm
+
+    if not api_keys:
+        raise RuntimeError("GOOGLE_API_KEY is not configured.")
+
+    primary_model = ChatGoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=api_keys[0])
+    fallback_models = [
+        ChatGoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=key)
+        for key in api_keys[1:]
+    ]
+
+    llm = primary_model.with_fallbacks(fallback_models)
+    return llm
+
+
+def get_initial_message():
+    return "Hello, I am your Mediwo Assistant. What brings you to the clinic today?"
+
+
+def generate_assistant_reply(conversation):
     chat_history = [SystemMessage(content=SYSTEM_PROMPT)]
+
+    for item in conversation:
+        role = item.get("role")
+        message = item.get("message", "")
+
+        if role == "patient":
+            chat_history.append(HumanMessage(content=message))
+        else:
+            chat_history.append(AIMessage(content=message))
+
+    response = _get_llm().invoke(chat_history)
+    return response.content
+
+
+def generate_intake_summary(conversation):
+    conversation_text = "\n".join(
+        [f"{item.get('role', 'unknown').title()}: {item.get('message', '')}" for item in conversation]
+    )
+
+    summary_request = [
+        SystemMessage(content=SUMMARY_PROMPT),
+        HumanMessage(content=f"Summarize this conversation:\n\n{conversation_text}"),
+    ]
+
+    summary_response = _get_llm().invoke(summary_request)
+    return summary_response.content
+
+def run_mediwo_chatbot():
     print("--- Mediwo Terminal Intake (Type 'exit' to finish) ---")
-    
-    initial_msg = "Hello, I am your Mediwo Assistant. What brings you to the clinic today?"
+
+    conversation = []
+    initial_msg = get_initial_message()
     print(f"Assistant: {initial_msg}")
-    chat_history.append(AIMessage(content=initial_msg))
+    conversation.append({"role": "ai", "message": initial_msg})
 
     while True:
         user_input = input("Patient: ")
-        
+
         if user_input.lower() in ['exit', 'done', 'quit']:
             break
-            
-        chat_history.append(HumanMessage(content=user_input))
-        
-        response = llm.invoke(chat_history)
-        print(f"Assistant: {response.content}")
-        chat_history.append(AIMessage(content=response.content))
+
+        conversation.append({"role": "patient", "message": user_input})
+        assistant_reply = generate_assistant_reply(conversation)
+        print(f"Assistant: {assistant_reply}")
+        conversation.append({"role": "ai", "message": assistant_reply})
 
     print("\n" + "-"*30)
     print("Generating Intelligent Clinical Summary...")
     print("-"*30 + "\n")
-    
-    conversation_text = "\n".join([f"{type(m).__name__}: {m.content}" for m in chat_history[1:]])
-    
-    summary_request = [
-        SystemMessage(content=SUMMARY_PROMPT),
-        HumanMessage(content=f"Summarize this conversation:\n\n{conversation_text}")
-    ]
-    
-    summary_response = llm.invoke(summary_request)
-    print(summary_response.content)
+
+    print(generate_intake_summary(conversation))
 
 if __name__ == "__main__":
     run_mediwo_chatbot()

@@ -1,6 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { FileList } from '../../components/patient/FileList';
-import { FileUploader } from '../../components/patient/FileUploader';
+import {
+  FileUploader,
+  type UploadedReportPayload,
+} from '../../components/patient/FileUploader';
 import { ProcessingIndicator } from '../../components/patient/ProcessingIndicator';
 import { SummaryCard } from '../../components/patient/SummaryCard';
 import { Button } from '../../components/ui/Button';
@@ -8,11 +11,13 @@ import { Card } from '../../components/ui/Card';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { StateView } from '../../components/ui/StateView';
 import { baseMedicalSummary } from '../../data/mockData';
+import { parseDocument } from '../../services/backendApi';
 import type { AsyncState, MedicalSummary, UploadedReport } from '../../types/models';
 
-function buildSummaryFromReports(reports: UploadedReport[]): MedicalSummary {
+function buildSummaryFromReports(reports: UploadedReport[], narratives: string[]): MedicalSummary {
   const hasImaging = reports.some((report) => report.type === 'Imaging');
   const hasClinicalDocs = reports.some((report) => report.type === 'Clinical Document');
+  const clinicalNarrative = narratives.join('\n\n');
 
   return {
     pastConditions: [
@@ -27,6 +32,7 @@ function buildSummaryFromReports(reports: UploadedReport[]): MedicalSummary {
       'No known drug allergies documented',
     ],
     generatedAt: new Date().toISOString(),
+    clinicalNarrative: clinicalNarrative || undefined,
   };
 }
 
@@ -34,30 +40,36 @@ export function ProfilePage() {
   const [reports, setReports] = useState<UploadedReport[]>([]);
   const [summary, setSummary] = useState<MedicalSummary>(baseMedicalSummary);
   const [summaryState, setSummaryState] = useState<AsyncState>('empty');
+  const [narratives, setNarratives] = useState<string[]>([]);
 
-  useEffect(() => {
-    if (summaryState !== 'processing') {
-      return;
-    }
-
-    const timer = window.setTimeout(() => {
-      setSummary(buildSummaryFromReports(reports));
-      setSummaryState('success');
-    }, 1500);
-
-    return () => window.clearTimeout(timer);
-  }, [reports, summaryState]);
-
-  const onUploadReports = (uploaded: UploadedReport[]) => {
-    const containsInvalidFile = uploaded.some((report) => /error|corrupt/i.test(report.name));
+  const onUploadReports = async (uploaded: UploadedReportPayload[]) => {
+    const containsInvalidFile = uploaded.some(({ report }) => /error|corrupt/i.test(report.name));
 
     if (containsInvalidFile) {
       setSummaryState('error');
       return;
     }
 
-    setReports((prev) => [...uploaded, ...prev]);
     setSummaryState('processing');
+
+    try {
+      const parsedFiles = await Promise.all(
+        uploaded.map(async ({ report, file }) => {
+          const parsed = await parseDocument(file);
+          return { report, parsedSummary: parsed.summary };
+        }),
+      );
+
+      const nextReports = [...parsedFiles.map((item) => item.report), ...reports];
+      const nextNarratives = [...parsedFiles.map((item) => item.parsedSummary), ...narratives];
+
+      setReports(nextReports);
+      setNarratives(nextNarratives);
+      setSummary(buildSummaryFromReports(nextReports, nextNarratives));
+      setSummaryState('success');
+    } catch {
+      setSummaryState('error');
+    }
   };
 
   const retrySummary = () => {
@@ -66,7 +78,8 @@ export function ProfilePage() {
       return;
     }
 
-    setSummaryState('processing');
+    setSummary(buildSummaryFromReports(reports, narratives));
+    setSummaryState('success');
   };
 
   const summaryUpdatedLabel = useMemo(() => {
