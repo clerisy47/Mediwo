@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { Button } from '../../components/ui/Button';
+import { MediwoLogo } from '../../components/ui/MediwoLogo';
 
 export function AuthPage() {
   const [mode, setMode] = useState<'login' | 'signup'>('login');
@@ -8,7 +9,7 @@ export function AuthPage() {
   return (
     <div className="auth-page">
       <NavLink to="/" className="logo-link">
-        MEDIWO
+        <MediwoLogo />
       </NavLink>
 
       <section className="auth-card">

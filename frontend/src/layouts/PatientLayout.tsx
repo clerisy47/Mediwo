@@ -1,4 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom';
+import { MediwoLogo } from '../components/ui/MediwoLogo';
 
 const patientLinks = [
   { label: 'Dashboard', path: '/patient/dashboard' },
@@ -13,7 +14,7 @@ export function PatientLayout() {
     <div className="patient-shell">
       <header className="patient-topbar">
         <NavLink to="/" className="logo-link">
-          MEDIWO
+          <MediwoLogo />
         </NavLink>
         <nav className="patient-nav">
           {patientLinks.map((link) => (

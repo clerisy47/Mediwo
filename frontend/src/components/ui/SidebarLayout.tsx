@@ -1,5 +1,6 @@
 import { NavLink, Outlet } from 'react-router-dom';
 import type { SidebarNavItem } from '../../types/models';
+import { MediwoLogo } from './MediwoLogo';
 
 interface SidebarLayoutProps {
   title: string;
@@ -13,7 +14,10 @@ export function SidebarLayout({ title, subtitle, navItems, userLabel }: SidebarL
     <div className="dashboard-shell">
       <aside className="dashboard-sidebar">
         <div className="brand-block">
-          <span className="brand-pill">MEDIWO</span>
+          <span className="brand-pill">
+            <MediwoLogo compact />
+            Mediwo
+          </span>
           <h2>{title}</h2>
           <p>{subtitle}</p>
         </div>

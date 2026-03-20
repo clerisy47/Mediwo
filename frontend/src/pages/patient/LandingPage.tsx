@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import { Card } from '../../components/ui/Card';
+import { MediwoLogo } from '../../components/ui/MediwoLogo';
 
 const features = [
   {
@@ -24,7 +25,7 @@ export function LandingPage() {
     <div className="landing-page">
       <header className="landing-header">
         <NavLink to="/" className="logo-link">
-          MEDIWO
+          <MediwoLogo />
         </NavLink>
         <nav>
           <NavLink to="/auth" className="btn btn-secondary btn-sm">
