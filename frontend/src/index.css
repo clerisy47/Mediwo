@@ -1033,6 +1033,49 @@ ul {
   line-height: 1.7;
 }
 
+.markdown-content > :first-child {
+  margin-top: 0;
+}
+
+.markdown-content > :last-child {
+  margin-bottom: 0;
+}
+
+.markdown-content p {
+  margin: 0 0 10px;
+}
+
+.markdown-content ul,
+.markdown-content ol {
+  margin: 0 0 10px;
+  padding-left: 20px;
+}
+
+.markdown-content li + li {
+  margin-top: 4px;
+}
+
+.markdown-content h1,
+.markdown-content h2,
+.markdown-content h3,
+.markdown-content h4 {
+  font-family: 'Sora', sans-serif;
+  margin: 0 0 8px;
+}
+
+.markdown-content h1 {
+  font-size: 1.35rem;
+}
+
+.markdown-content h2 {
+  font-size: 1.2rem;
+}
+
+.markdown-content h3,
+.markdown-content h4 {
+  font-size: 1rem;
+}
+
 .editor-layout {
   display: grid;
   gap: 14px;
@@ -1125,9 +1168,13 @@ ul {
   color: var(--text-secondary);
   padding: 12px;
   min-height: 180px;
-  white-space: pre-wrap;
   font-family: 'Manrope', sans-serif;
   font-size: 14px;
+}
+
+.final-notes-preview.empty {
+  display: flex;
+  align-items: center;
 }
 
 .metrics-grid {

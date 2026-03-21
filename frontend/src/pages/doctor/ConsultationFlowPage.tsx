@@ -5,6 +5,7 @@ import { SuggestionDropdown } from '../../components/doctor/SuggestionDropdown';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
+import { MarkdownText } from '../../components/ui/MarkdownText';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { StateView } from '../../components/ui/StateView';
 import { StepIndicator } from '../../components/ui/StepIndicator';
@@ -101,8 +102,7 @@ export function ConsultationFlowPage() {
 
           <Card title="AI Generated Clinical Summary" subtitle="Read-only clinical context">
             <Badge tone="info">Read-only</Badge>
-            <p className="clinical-paragraph">{aiClinicalSummary[0]}</p>
-            <p className="clinical-paragraph">{aiClinicalSummary[1]}</p>
+            <MarkdownText content={aiClinicalSummary.join('\n\n')} className="clinical-paragraph" />
             <Button onClick={() => setStep(2)}>Next → Proceed to Documentation</Button>
           </Card>
         </section>
@@ -152,7 +152,11 @@ export function ConsultationFlowPage() {
             <p className="muted-text">
               Review complete notes and ensure diagnosis and prescription sections are finalized.
             </p>
-            <pre className="final-notes-preview">{notes || 'No documentation added yet.'}</pre>
+            {notes.trim() ? (
+              <MarkdownText content={notes} className="final-notes-preview" />
+            ) : (
+              <div className="final-notes-preview empty">No documentation added yet.</div>
+            )}
             <div className="step-actions">
               <Button variant="secondary" onClick={() => setStep(2)}>
                 Back to Editor

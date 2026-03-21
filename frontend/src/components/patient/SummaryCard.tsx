@@ -1,5 +1,6 @@
 import { Badge } from '../ui/Badge';
 import { Card } from '../ui/Card';
+import { MarkdownText } from '../ui/MarkdownText';
 import type { MedicalSummary } from '../../types/models';
 
 interface SummaryCardProps {
@@ -45,7 +46,7 @@ export function SummaryCard({ summary, updateLabel }: SummaryCardProps) {
       {summary.clinicalNarrative && (
         <section className="summary-section">
           <h4>Clinical Narrative</h4>
-          <p>{summary.clinicalNarrative}</p>
+          <MarkdownText content={summary.clinicalNarrative} />
         </section>
       )}
     </Card>
