@@ -52,12 +52,19 @@ export function QueuePage() {
       return;
     }
 
+    console.log('Fetching queue for doctor:', currentDoctor.id, currentDoctor.full_name);
+
     try {
       const response = await fetch(`http://localhost:8000/api/queue/doctor/${currentDoctor.id}`);
       const data = await response.json();
       
+      console.log('Queue response:', data);
+      
       if (data.success) {
         setQueue(data.queue);
+        console.log('Queue set:', data.queue);
+      } else {
+        setError('Failed to fetch queue');
       }
     } catch (err) {
       console.error('Failed to fetch doctor queue:', err);

@@ -32,12 +32,19 @@ export function DashboardPage() {
   const fetchQueueStatus = async (currentUser: any) => {
     if (!currentUser) return;
 
+    console.log('Fetching queue status for patient:', currentUser.id, currentUser.full_name);
+
     try {
       const response = await fetch(`http://localhost:8000/api/queue/patient/${currentUser.id}`);
       const data = await response.json();
       
+      console.log('Queue status response:', data);
+      
       if (data.success && data.queue_status) {
         setQueueStatus(data.queue_status);
+        console.log('Queue status set:', data.queue_status);
+      } else {
+        console.log('No queue status found');
       }
     } catch (err) {
       console.error('Failed to fetch queue status:', err);
@@ -97,15 +104,17 @@ export function DashboardPage() {
           <div className="status-grid">
             <div>
               <p className="label">Queue Position</p>
-              <p className="value">#{queueStatus.position}</p>
+              <p className="value">#{queueStatus.position || 'In Consultation'}</p>
+            </div>
+            <div>
+              <p className="label">Status</p>
+              <p className="value" style={{ color: '#28a745' }}>
+                {queueStatus.position === 0 ? 'In Consultation' : 'Waiting'}
+              </p>
             </div>
             <div>
               <p className="label">Estimated Wait</p>
               <p className="value">{queueStatus.estimated_wait_time}</p>
-            </div>
-            <div>
-              <p className="label">Status</p>
-              <p className="value">Waiting</p>
             </div>
             <div>
               <p className="label">Joined At</p>
