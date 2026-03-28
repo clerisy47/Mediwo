@@ -76,6 +76,7 @@ ul {
 .mediwo-logo-mark {
   width: 34px;
   height: 34px;
+  object-fit: contain; 
   border-radius: 10px;
   box-shadow: 0 8px 18px rgba(15, 118, 110, 0.26);
   transform-origin: center;
