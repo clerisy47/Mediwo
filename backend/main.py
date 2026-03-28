@@ -14,6 +14,12 @@ from pipelines.intake_questioning import (
     generate_intake_summary,
     get_initial_message,
 )
+from services.user_service import (
+    authenticate_user,
+    register_patient,
+    register_doctor,
+    get_available_doctors,
+)
 
 app = FastAPI(title="Mediwo Backend", version="1.0.0")
 
@@ -37,6 +43,24 @@ class IntakeCompleteRequest(BaseModel):
     sessionId: str
 
 
+class PatientRegisterRequest(BaseModel):
+    username: str
+    password: str
+    full_name: str = None
+
+
+class DoctorRegisterRequest(BaseModel):
+    username: str
+    password: str
+    full_name: str = None
+    specialization: str = None
+
+
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+
 @app.get("/")
 def home():
     return {"message": "Mediwo FastAPI backend is running"}
@@ -45,6 +69,49 @@ def home():
 @app.get("/health")
 def health_check():
     return {"status": "ok"}
+
+
+@app.post("/api/auth/register/patient")
+def register_patient_endpoint(payload: PatientRegisterRequest):
+    try:
+        patient = register_patient(payload.username, payload.password, payload.full_name)
+        return {"success": True, "user": patient}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Registration failed: {str(e)}")
+
+
+@app.post("/api/auth/register/doctor")
+def register_doctor_endpoint(payload: DoctorRegisterRequest):
+    try:
+        doctor = register_doctor(payload.username, payload.password, payload.full_name, payload.specialization)
+        return {"success": True, "user": doctor}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Registration failed: {str(e)}")
+
+
+@app.post("/api/auth/login")
+def login_endpoint(payload: LoginRequest):
+    try:
+        user = authenticate_user(payload.username, payload.password)
+        if user:
+            return {"success": True, "user": user}
+        else:
+            raise HTTPException(status_code=401, detail="Invalid username or password")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Login failed: {str(e)}")
+
+
+@app.get("/api/doctors/available")
+def get_available_doctors_endpoint():
+    try:
+        doctors = get_available_doctors()
+        return {"success": True, "doctors": doctors}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch doctors: {str(e)}")
 
 
 @app.post("/api/intake/start")
