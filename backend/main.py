@@ -27,6 +27,13 @@ from services.queue_service import (
     remove_from_queue,
     update_queue_status,
 )
+from services.patient_summary_service import (
+    save_patient_summary,
+    get_doctor_patient_summaries,
+    get_patient_summary,
+    update_summary_status,
+    get_patient_summaries_by_patient,
+)
 
 app = FastAPI(title="Mediwo Backend", version="1.0.0")
 
@@ -48,6 +55,7 @@ class IntakeMessageRequest(BaseModel):
 
 class IntakeCompleteRequest(BaseModel):
     sessionId: str
+    doctorId: str = None  # Optional doctor ID to link summary to
 
 
 class PatientRegisterRequest(BaseModel):
@@ -76,6 +84,19 @@ class JoinQueueRequest(BaseModel):
 
 class QueueStatusUpdateRequest(BaseModel):
     queue_id: str
+    status: str
+
+
+class PatientSummaryRequest(BaseModel):
+    patient_id: str
+    doctor_id: str
+    session_id: str
+    conversation_summary: str
+    documents_summary: str = None
+
+
+class SummaryStatusUpdateRequest(BaseModel):
+    summary_id: str
     status: str
 
 
@@ -176,6 +197,54 @@ def update_queue_status_endpoint(payload: QueueStatusUpdateRequest):
         raise HTTPException(status_code=500, detail=f"Failed to update queue status: {str(e)}")
 
 
+@app.post("/api/patient-summaries")
+def save_patient_summary_endpoint(payload: PatientSummaryRequest):
+    try:
+        summary = save_patient_summary(
+            payload.patient_id,
+            payload.doctor_id,
+            payload.session_id,
+            payload.conversation_summary,
+            payload.documents_summary
+        )
+        return {"success": True, "summary": summary}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to save patient summary: {str(e)}")
+
+
+@app.get("/api/patient-summaries/doctor/{doctor_id}")
+def get_doctor_summaries_endpoint(doctor_id: str):
+    try:
+        summaries = get_doctor_patient_summaries(doctor_id)
+        return {"success": True, "summaries": summaries}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get doctor summaries: {str(e)}")
+
+
+@app.get("/api/patient-summaries/{summary_id}")
+def get_patient_summary_endpoint(summary_id: str):
+    try:
+        summary = get_patient_summary(summary_id)
+        if summary:
+            return {"success": True, "summary": summary}
+        else:
+            raise HTTPException(status_code=404, detail="Summary not found")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get patient summary: {str(e)}")
+
+
+@app.put("/api/patient-summaries/status")
+def update_summary_status_endpoint(payload: SummaryStatusUpdateRequest):
+    try:
+        success = update_summary_status(payload.summary_id, payload.status)
+        if success:
+            return {"success": True}
+        else:
+            raise HTTPException(status_code=404, detail="Summary not found")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to update summary status: {str(e)}")
+
+
 @app.post("/api/intake/start")
 def start_intake_session():
     session_id = uuid4().hex
@@ -217,10 +286,24 @@ def complete_intake_session(payload: IntakeCompleteRequest):
 
     try:
         summary = generate_intake_summary(conversation)
+        
+        # If doctor ID is provided, save the summary to the doctor
+        if payload.doctorId:
+            # Get patient ID from conversation (we'll need to track this)
+            # For now, we'll assume patient ID is passed or extracted from auth
+            patient_id = "unknown_patient"  # This should come from authentication
+            
+            save_patient_summary(
+                patient_id=patient_id,
+                doctor_id=payload.doctorId,
+                session_id=payload.sessionId,
+                conversation_summary=summary,
+                documents_summary=None
+            )
+        
+        return {"summary": summary}
     except RuntimeError as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
-
-    return {"summary": summary}
 
 
 @app.post("/api/documents/parse")

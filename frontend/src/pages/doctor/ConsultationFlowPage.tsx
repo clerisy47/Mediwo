@@ -1,7 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { InlineHints } from '../../components/doctor/InlineHints';
 import { RichTextEditor } from '../../components/doctor/RichTextEditor';
-import { SuggestionDropdown } from '../../components/doctor/SuggestionDropdown';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
@@ -9,14 +8,19 @@ import { MarkdownText } from '../../components/ui/MarkdownText';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { StateView } from '../../components/ui/StateView';
 import { StepIndicator } from '../../components/ui/StepIndicator';
-import {
-  aiClinicalSummary,
-  aiSuggestions,
-  historyBullets,
-  intakeSymptoms,
-  sampleReports,
-} from '../../data/mockData';
-import type { AsyncState } from '../../types/models';
+
+type AsyncState = 'empty' | 'processing' | 'success' | 'error';
+
+interface PatientSummary {
+  id: string;
+  patient_id: string;
+  doctor_id: string;
+  session_id: string;
+  conversation_summary: string;
+  documents_summary?: string;
+  created_at: string;
+  status: string;
+}
 
 const flowSteps = [
   'Patient Overview + AI Summary',
@@ -29,6 +33,53 @@ export function ConsultationFlowPage() {
   const [notes, setNotes] = useState('');
   const [acceptedHints, setAcceptedHints] = useState<string[]>([]);
   const [saveState, setSaveState] = useState<AsyncState>('empty');
+  const [patientSummary, setPatientSummary] = useState<PatientSummary | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  // Get current doctor and patient from URL params or localStorage
+  const getCurrentDoctor = () => {
+    const userStr = localStorage.getItem('user');
+    return userStr ? JSON.parse(userStr) : null;
+  };
+
+  const getPatientIdFromUrl = () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get('patient_id');
+  };
+
+  useEffect(() => {
+    fetchPatientSummary();
+  }, []);
+
+  const fetchPatientSummary = async () => {
+    const currentDoctor = getCurrentDoctor();
+    const patientId = getPatientIdFromUrl();
+    
+    if (!currentDoctor || !patientId) {
+      setError('Missing doctor or patient information');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const response = await fetch(`http://localhost:8000/api/patient-summaries/doctor/${currentDoctor.id}`);
+      const data = await response.json();
+      
+      if (data.success) {
+        // Find the summary for this specific patient
+        const patientSummary = data.summaries.find((s: PatientSummary) => s.patient_id === patientId);
+        if (patientSummary) {
+          setPatientSummary(patientSummary);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to fetch patient summary:', err);
+      setError('Failed to load patient summary');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const appendSuggestion = (text: string) => {
     if (acceptedHints.includes(text)) {
@@ -67,75 +118,70 @@ export function ConsultationFlowPage() {
       {step === 1 && (
         <section className="consultation-grid">
           <Card title="Patient Overview" subtitle="Intake and longitudinal context">
-            <div className="overview-block">
-              <h4>Patient Info</h4>
-              <p>Aarav Singh · 41 years · Token A-19</p>
-            </div>
+            {loading ? (
+              <div>Loading patient information...</div>
+            ) : error ? (
+              <div style={{ color: 'red' }}>{error}</div>
+            ) : patientSummary ? (
+              <>
+                <div className="overview-block">
+                  <h4>Patient Information</h4>
+                  <p>Patient ID: {patientSummary.patient_id}</p>
+                  <p>Session ID: {patientSummary.session_id}</p>
+                  <p>Status: <Badge tone="info">{patientSummary.status}</Badge></p>
+                </div>
 
-            <div className="overview-block">
-              <h4>Symptoms (from intake)</h4>
-              <ul>
-                {intakeSymptoms.map((symptom) => (
-                  <li key={symptom}>{symptom}</li>
-                ))}
-              </ul>
-            </div>
+                <div className="overview-block">
+                  <h4>AI Generated Clinical Summary</h4>
+                  <div style={{ 
+                    background: '#f8f9fa', 
+                    padding: '15px', 
+                    borderRadius: '8px',
+                    border: '1px solid #e9ecef'
+                  }}>
+                    <MarkdownText content={patientSummary.conversation_summary} className="clinical-paragraph" />
+                  </div>
+                </div>
 
-            <div className="overview-block">
-              <h4>History</h4>
-              <ul>
-                {historyBullets.map((history) => (
-                  <li key={history}>{history}</li>
-                ))}
-              </ul>
-            </div>
+                {patientSummary.documents_summary && (
+                  <div className="overview-block">
+                    <h4>Document Analysis</h4>
+                    <div style={{ 
+                      background: '#f8f9fa', 
+                      padding: '15px', 
+                      borderRadius: '8px',
+                      border: '1px solid #e9ecef'
+                    }}>
+                      <MarkdownText content={patientSummary.documents_summary} className="clinical-paragraph" />
+                    </div>
+                  </div>
+                )}
 
-            <div className="overview-block">
-              <h4>Uploaded Reports</h4>
-              <ul>
-                {sampleReports.map((report) => (
-                  <li key={report.id}>{report.name}</li>
-                ))}
-              </ul>
-            </div>
+                <div className="overview-block">
+                  <h4>Consultation Time</h4>
+                  <p>Created: {new Date(patientSummary.created_at).toLocaleString()}</p>
+                </div>
+              </>
+            ) : (
+              <div>No patient summary available</div>
+            )}
           </Card>
 
-          <Card title="AI Generated Clinical Summary" subtitle="Read-only clinical context">
-            <Badge tone="info">Read-only</Badge>
-            <MarkdownText content={aiClinicalSummary.join('\n\n')} className="clinical-paragraph" />
-            <Button onClick={() => setStep(2)}>Next → Proceed to Documentation</Button>
+          <Card title="Consultation Actions" subtitle="Next steps">
+            <Button onClick={() => setStep(2)} disabled={!patientSummary}>
+              Next → Proceed to Documentation
+            </Button>
           </Card>
         </section>
       )}
 
       {step === 2 && (
         <section className="editor-layout">
-          <Card title="Smart Documentation Editor" subtitle="Accept, ignore, or manually edit AI suggestions">
+          <Card title="Smart Documentation Editor" subtitle="Add consultation notes">
             <RichTextEditor value={notes} onChange={setNotes} />
             <p className="muted-text">Word count: {notesWordCount}</p>
             <InlineHints acceptedHints={acceptedHints} />
           </Card>
-
-          <section className="suggestions-panel">
-            <SuggestionDropdown
-              title="Symptoms"
-              suggestions={aiSuggestions.symptoms}
-              onAccept={appendSuggestion}
-              onIgnore={ignoreSuggestion}
-            />
-            <SuggestionDropdown
-              title="Diagnoses"
-              suggestions={aiSuggestions.diagnoses}
-              onAccept={appendSuggestion}
-              onIgnore={ignoreSuggestion}
-            />
-            <SuggestionDropdown
-              title="Prescriptions"
-              suggestions={aiSuggestions.prescriptions}
-              onAccept={appendSuggestion}
-              onIgnore={ignoreSuggestion}
-            />
-          </section>
 
           <div className="step-actions">
             <Button variant="secondary" onClick={() => setStep(1)}>
