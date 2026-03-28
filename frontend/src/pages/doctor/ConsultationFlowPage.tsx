@@ -22,6 +22,17 @@ interface PatientSummary {
   status: string;
 }
 
+interface QueuePatient {
+  queue_id: string;
+  patient_id: string;
+  patient_name: string;
+  doctor_id: string;
+  joined_at: string;
+  status: string;
+  position: number;
+  estimated_wait_time: string;
+}
+
 const flowSteps = [
   'Patient Overview + AI Summary',
   'Smart Documentation Editor',
@@ -34,6 +45,7 @@ export function ConsultationFlowPage() {
   const [acceptedHints, setAcceptedHints] = useState<string[]>([]);
   const [saveState, setSaveState] = useState<AsyncState>('empty');
   const [patientSummary, setPatientSummary] = useState<PatientSummary | null>(null);
+  const [queuePatient, setQueuePatient] = useState<QueuePatient | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [doctor, setDoctor] = useState<any>(null);
@@ -65,20 +77,36 @@ export function ConsultationFlowPage() {
       return;
     }
 
+    console.log('Fetching consultation data for patient:', patientId, 'doctor:', currentDoctor.id);
+
     try {
-      const response = await fetch(`http://localhost:8000/api/patient-summaries/doctor/${currentDoctor.id}`);
-      const data = await response.json();
+      // Fetch patient summaries
+      const summaryResponse = await fetch(`http://localhost:8000/api/patient-summaries/doctor/${currentDoctor.id}`);
+      const summaryData = await summaryResponse.json();
       
-      if (data.success) {
-        // Find the summary for this specific patient
-        const patientSummary = data.summaries.find((s: PatientSummary) => s.patient_id === patientId);
+      if (summaryData.success) {
+        const patientSummary = summaryData.summaries.find((s: PatientSummary) => s.patient_id === patientId);
         if (patientSummary) {
           setPatientSummary(patientSummary);
+          console.log('Found patient summary:', patientSummary);
         }
       }
+
+      // Fetch queue patient information
+      const queueResponse = await fetch(`http://localhost:8000/api/queue/doctor/${currentDoctor.id}`);
+      const queueData = await queueResponse.json();
+      
+      if (queueData.success) {
+        const queuePatient = queueData.queue.find((p: QueuePatient) => p.patient_id === patientId);
+        if (queuePatient) {
+          setQueuePatient(queuePatient);
+          console.log('Found queue patient:', queuePatient);
+        }
+      }
+
     } catch (err) {
-      console.error('Failed to fetch patient summary:', err);
-      setError('Failed to load patient summary');
+      console.error('Failed to fetch patient information:', err);
+      setError('Failed to load patient information');
     } finally {
       setLoading(false);
     }
@@ -101,12 +129,46 @@ export function ConsultationFlowPage() {
     return notes.trim() ? notes.trim().split(/\s+/).length : 0;
   }, [notes]);
 
-  const saveConsultation = () => {
+  const saveConsultation = async () => {
+    if (!queuePatient) {
+      setError('No patient selected');
+      return;
+    }
+
     setSaveState('processing');
 
-    window.setTimeout(() => {
-      setSaveState('success');
-    }, 1000);
+    try {
+      // Update queue status to completed
+      const response = await fetch('http://localhost:8000/api/queue/status', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          queue_id: queuePatient.queue_id,
+          status: 'completed'
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setSaveState('success');
+        console.log('Consultation completed successfully');
+        
+        // Redirect back to queue after 2 seconds
+        setTimeout(() => {
+          window.location.href = '/doctor/queue';
+        }, 2000);
+      } else {
+        setError('Failed to complete consultation');
+        setSaveState('error');
+      }
+    } catch (err) {
+      console.error('Failed to save consultation:', err);
+      setError('Network error. Please try again.');
+      setSaveState('error');
+    }
   };
 
   return (
@@ -115,6 +177,12 @@ export function ConsultationFlowPage() {
         title={`Dr. ${doctor?.full_name || 'Loading...'} - Consultation`}
         description={`Consultation workflow for ${doctor?.specialization || 'General Practice'}. Fixed step-based workflow for consistency, speed, and structured clinical records.`}
       />
+
+      {error && (
+        <div style={{ color: 'red', marginBottom: '15px', padding: '10px', border: '1px solid #ff6b6b', borderRadius: '5px' }}>
+          {error}
+        </div>
+      )}
 
       <StepIndicator steps={flowSteps} activeStep={step} />
 
@@ -125,53 +193,75 @@ export function ConsultationFlowPage() {
               <div>Loading patient information...</div>
             ) : error ? (
               <div style={{ color: 'red' }}>{error}</div>
-            ) : patientSummary ? (
+            ) : queuePatient ? (
               <>
                 <div className="overview-block">
                   <h4>Patient Information</h4>
-                  <p>Patient ID: {patientSummary.patient_id}</p>
-                  <p>Session ID: {patientSummary.session_id}</p>
-                  <p>Status: <Badge tone="info">{patientSummary.status}</Badge></p>
+                  <p><strong>Name:</strong> {queuePatient.patient_name}</p>
+                  <p><strong>Patient ID:</strong> {queuePatient.patient_id}</p>
+                  <p><strong>Queue Position:</strong> #{queuePatient.position}</p>
+                  <p><strong>Status:</strong> <Badge tone="info">{queuePatient.status}</Badge></p>
+                  <p><strong>Joined Queue:</strong> {new Date(queuePatient.joined_at).toLocaleString()}</p>
                 </div>
 
-                <div className="overview-block">
-                  <h4>AI Generated Clinical Summary</h4>
-                  <div style={{ 
-                    background: '#f8f9fa', 
-                    padding: '15px', 
-                    borderRadius: '8px',
-                    border: '1px solid #e9ecef'
-                  }}>
-                    <MarkdownText content={patientSummary.conversation_summary} className="clinical-paragraph" />
-                  </div>
-                </div>
+                {patientSummary ? (
+                  <>
+                    <div className="overview-block">
+                      <h4>AI Generated Clinical Summary</h4>
+                      <div style={{ 
+                        background: '#f8f9fa', 
+                        padding: '15px', 
+                        borderRadius: '8px',
+                        border: '1px solid #e9ecef'
+                      }}>
+                        <MarkdownText content={patientSummary.conversation_summary} className="clinical-paragraph" />
+                      </div>
+                    </div>
 
-                {patientSummary.documents_summary && (
+                    {patientSummary.documents_summary && (
+                      <div className="overview-block">
+                        <h4>Document Analysis</h4>
+                        <div style={{ 
+                          background: '#f8f9fa', 
+                          padding: '15px', 
+                          borderRadius: '8px',
+                          border: '1px solid #e9ecef'
+                        }}>
+                          <MarkdownText content={patientSummary.documents_summary} className="clinical-paragraph" />
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="overview-block">
+                      <h4>Consultation Time</h4>
+                      <p>Created: {new Date(patientSummary.created_at).toLocaleString()}</p>
+                    </div>
+                  </>
+                ) : (
                   <div className="overview-block">
-                    <h4>Document Analysis</h4>
+                    <h4>AI Clinical Summary</h4>
                     <div style={{ 
-                      background: '#f8f9fa', 
+                      background: '#fff3cd', 
                       padding: '15px', 
                       borderRadius: '8px',
-                      border: '1px solid #e9ecef'
+                      border: '1px solid #ffeaa7'
                     }}>
-                      <MarkdownText content={patientSummary.documents_summary} className="clinical-paragraph" />
+                      <p style={{ margin: '0', color: '#856404' }}>
+                        <strong>No AI intake completed yet.</strong><br />
+                        The patient has not completed the AI-powered intake questionnaire. 
+                        You can proceed with the consultation manually or ask the patient to complete the intake first.
+                      </p>
                     </div>
                   </div>
                 )}
-
-                <div className="overview-block">
-                  <h4>Consultation Time</h4>
-                  <p>Created: {new Date(patientSummary.created_at).toLocaleString()}</p>
-                </div>
               </>
             ) : (
-              <div>No patient summary available</div>
+              <div>No patient information available</div>
             )}
           </Card>
 
           <Card title="Consultation Actions" subtitle="Next steps">
-            <Button onClick={() => setStep(2)} disabled={!patientSummary}>
+            <Button onClick={() => setStep(2)} disabled={!queuePatient}>
               Next → Proceed to Documentation
             </Button>
           </Card>
