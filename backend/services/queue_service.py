@@ -90,7 +90,7 @@ def get_patient_queue_status(patient_id: str) -> Optional[Dict]:
     
     for doctor_id, queue in queues["queues"].items():
         for patient in queue:
-            if patient["patient_id"] == patient_id and patient["status"] == "waiting":
+            if patient["patient_id"] == patient_id and patient["status"] in ["waiting", "in_consultation"]:
                 # Calculate current position
                 waiting_patients = [p for p in queue if p["status"] == "waiting"]
                 position = next((i + 1 for i, p in enumerate(waiting_patients) if p["patient_id"] == patient_id), 0)
