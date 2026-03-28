@@ -20,6 +20,13 @@ from services.user_service import (
     register_doctor,
     get_available_doctors,
 )
+from services.queue_service import (
+    join_queue,
+    get_doctor_queue,
+    get_patient_queue_status,
+    remove_from_queue,
+    update_queue_status,
+)
 
 app = FastAPI(title="Mediwo Backend", version="1.0.0")
 
@@ -59,6 +66,17 @@ class DoctorRegisterRequest(BaseModel):
 class LoginRequest(BaseModel):
     username: str
     password: str
+
+
+class JoinQueueRequest(BaseModel):
+    doctor_id: str
+    patient_id: str
+    patient_name: str
+
+
+class QueueStatusUpdateRequest(BaseModel):
+    queue_id: str
+    status: str
 
 
 @app.get("/")
@@ -112,6 +130,50 @@ def get_available_doctors_endpoint():
         return {"success": True, "doctors": doctors}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch doctors: {str(e)}")
+
+
+@app.post("/api/queue/join")
+def join_queue_endpoint(payload: JoinQueueRequest):
+    try:
+        queue_info = join_queue(payload.doctor_id, payload.patient_id, payload.patient_name)
+        return {"success": True, "queue_info": queue_info}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to join queue: {str(e)}")
+
+
+@app.get("/api/queue/doctor/{doctor_id}")
+def get_doctor_queue_endpoint(doctor_id: str):
+    try:
+        queue = get_doctor_queue(doctor_id)
+        return {"success": True, "queue": queue}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get doctor queue: {str(e)}")
+
+
+@app.get("/api/queue/patient/{patient_id}")
+def get_patient_queue_status_endpoint(patient_id: str):
+    try:
+        status = get_patient_queue_status(patient_id)
+        if status:
+            return {"success": True, "queue_status": status}
+        else:
+            return {"success": True, "queue_status": None}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get patient queue status: {str(e)}")
+
+
+@app.put("/api/queue/status")
+def update_queue_status_endpoint(payload: QueueStatusUpdateRequest):
+    try:
+        success = update_queue_status(payload.queue_id, payload.status)
+        if success:
+            return {"success": True}
+        else:
+            raise HTTPException(status_code=404, detail="Queue entry not found")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to update queue status: {str(e)}")
 
 
 @app.post("/api/intake/start")
