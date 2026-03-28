@@ -25,6 +25,7 @@ export function QueuePage() {
   const [loading, setLoading] = useState(true);
   const [queue, setQueue] = useState<QueuePatient[]>([]);
   const [error, setError] = useState('');
+  const [doctor, setDoctor] = useState<any>(null);
 
   // Get current doctor from localStorage
   const getCurrentDoctor = () => {
@@ -33,6 +34,8 @@ export function QueuePage() {
   };
 
   useEffect(() => {
+    const currentDoctor = getCurrentDoctor();
+    setDoctor(currentDoctor);
     fetchDoctorQueue();
     
     const timer = window.setTimeout(() => {
@@ -92,8 +95,8 @@ export function QueuePage() {
   return (
     <div className="page-stack">
       <PageHeader
-        title="Patient Queue"
-        description="Monitor live queue and identify the current and next patient in consultation flow."
+        title={`Dr. ${doctor?.full_name || 'Loading...'}`}
+        description={`Patient queue for ${doctor?.specialization || 'Consultation'}. Monitor live queue and identify the current and next patient in consultation flow.`}
         actions={
           <Button variant="secondary" size="sm" onClick={fetchDoctorQueue}>
             Refresh Queue

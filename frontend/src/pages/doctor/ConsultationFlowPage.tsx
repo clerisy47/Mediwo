@@ -36,6 +36,7 @@ export function ConsultationFlowPage() {
   const [patientSummary, setPatientSummary] = useState<PatientSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [doctor, setDoctor] = useState<any>(null);
 
   // Get current doctor and patient from URL params or localStorage
   const getCurrentDoctor = () => {
@@ -49,6 +50,8 @@ export function ConsultationFlowPage() {
   };
 
   useEffect(() => {
+    const currentDoctor = getCurrentDoctor();
+    setDoctor(currentDoctor);
     fetchPatientSummary();
   }, []);
 
@@ -109,8 +112,8 @@ export function ConsultationFlowPage() {
   return (
     <div className="page-stack">
       <PageHeader
-        title="Consultation Flow"
-        description="Fixed step-based workflow for consistency, speed, and structured clinical records."
+        title={`Dr. ${doctor?.full_name || 'Loading...'} - Consultation`}
+        description={`Consultation workflow for ${doctor?.specialization || 'General Practice'}. Fixed step-based workflow for consistency, speed, and structured clinical records.`}
       />
 
       <StepIndicator steps={flowSteps} activeStep={step} />
