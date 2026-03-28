@@ -1,4 +1,5 @@
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import { MediwoLogo } from '../components/ui/MediwoLogo';
 
 const patientLinks = [
@@ -10,6 +11,27 @@ const patientLinks = [
 ];
 
 export function PatientLayout() {
+  const [user, setUser] = useState<any>(null);
+  const navigate = useNavigate();
+
+  // Get current user from localStorage
+  const getCurrentUser = () => {
+    const userStr = localStorage.getItem('user');
+    return userStr ? JSON.parse(userStr) : null;
+  };
+
+  useEffect(() => {
+    const currentUser = getCurrentUser();
+    setUser(currentUser);
+  }, []);
+
+  const handleLogout = () => {
+    // Clear user session
+    localStorage.removeItem('user');
+    // Redirect to login page
+    navigate('/auth');
+  };
+
   return (
     <div className="patient-shell">
       <header className="patient-topbar">
@@ -27,9 +49,15 @@ export function PatientLayout() {
             </NavLink>
           ))}
         </nav>
-        <NavLink to="/auth" className="btn btn-secondary btn-sm">
-          Login
-        </NavLink>
+        {user ? (
+          <button onClick={handleLogout} className="btn btn-secondary btn-sm">
+            Logout
+          </button>
+        ) : (
+          <NavLink to="/auth" className="btn btn-secondary btn-sm">
+            Login
+          </NavLink>
+        )}
       </header>
       <main className="patient-main">
         <Outlet />
