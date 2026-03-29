@@ -1,4 +1,3 @@
-import json
 import os
 from typing import Dict, List, Optional
 from uuid import uuid4
@@ -8,24 +7,6 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from database import get_database
-
-QUEUES_FILE = os.path.join(os.path.dirname(__file__), "..", "data", "queues.json")
-
-
-def _load_queues() -> Dict:
-    """Load queues from JSON file (fallback)"""
-    try:
-        with open(QUEUES_FILE, 'r') as f:
-            return json.load(f)
-    except FileNotFoundError:
-        return {"queues": {}}
-
-
-def _save_queues(queues: Dict) -> None:
-    """Save queues to JSON file (fallback)"""
-    os.makedirs(os.path.dirname(QUEUES_FILE), exist_ok=True)
-    with open(QUEUES_FILE, 'w') as f:
-        json.dump(queues, f, indent=2)
 
 
 def _get_patient_medical_info(patient_id: str) -> Dict:
