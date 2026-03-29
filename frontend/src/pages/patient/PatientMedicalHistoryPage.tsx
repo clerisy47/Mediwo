@@ -10,7 +10,8 @@ interface MedicalHistoryItem {
   doctor_name: string;
   doctor_specialization: string;
   medical_reports_summary: string;
-  conversation_summary: string;
+  conversation_summary: string | null;
+  doctor_notes?: string;
   status: string;
   created_at: string;
 }
@@ -86,8 +87,10 @@ export function PatientMedicalHistoryPage() {
       </div>
 
       {error && (
-        <Card style={{ borderLeft: '4px solid #ff6b6b', padding: '15px', marginBottom: '20px' }}>
-          <p style={{ color: '#ff6b6b', margin: 0 }}>Error: {error}</p>
+        <Card>
+          <div style={{ borderLeft: '4px solid #ff6b6b', padding: '15px', marginBottom: '20px' }}>
+            <p style={{ color: '#ff6b6b', margin: 0 }}>Error: {error}</p>
+          </div>
         </Card>
       )}
 
@@ -101,7 +104,8 @@ export function PatientMedicalHistoryPage() {
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
           {history.map((item, index) => (
-            <Card key={item.id} style={{ overflow: 'hidden' }}>
+            <Card key={item.id}>
+              <div style={{ overflow: 'hidden' }}>
               <div
                 onClick={() => toggleExpanded(item.id)}
                 style={{
@@ -121,14 +125,28 @@ export function PatientMedicalHistoryPage() {
                     </h3>
                     <div style={{
                       display: 'inline-block',
-                      backgroundColor: item.status === 'reviewed' ? '#c8e6c9' : '#fff9c4',
-                      color: item.status === 'reviewed' ? '#2e7d32' : '#f57c00',
+                      backgroundColor:
+                        item.status === 'reviewed'
+                          ? '#c8e6c9'
+                          : item.status === 'uploaded'
+                            ? '#e3f2fd'
+                            : '#fff9c4',
+                      color:
+                        item.status === 'reviewed'
+                          ? '#2e7d32'
+                          : item.status === 'uploaded'
+                            ? '#1565c0'
+                            : '#f57c00',
                       padding: '4px 8px',
                       borderRadius: '4px',
                       fontSize: '12px',
                       fontWeight: 500
                     }}>
-                      {item.status === 'reviewed' ? '✓ Reviewed' : '⏱️ Pending'}
+                      {item.status === 'reviewed'
+                        ? '✓ Reviewed'
+                        : item.status === 'uploaded'
+                          ? '📄 Uploaded'
+                          : '⏱️ Pending'}
                     </div>
                   </div>
                   <p style={{ margin: '0 0 5px 0', fontSize: '14px', fontWeight: 500 }}>
@@ -164,9 +182,30 @@ export function PatientMedicalHistoryPage() {
                       wordBreak: 'break-word',
                       border: '1px solid #eee'
                     }}>
-                      {item.conversation_summary}
+                      {item.conversation_summary || 'No intake conversation summary available yet.'}
                     </div>
                   </div>
+
+                  {item.doctor_notes && (
+                    <div style={{ marginBottom: '20px' }}>
+                      <h4 style={{ margin: '0 0 10px 0', fontSize: '14px', color: '#333' }}>
+                        Doctor Notes
+                      </h4>
+                      <div style={{
+                        backgroundColor: 'white',
+                        padding: '15px',
+                        borderRadius: '6px',
+                        lineHeight: '1.6',
+                        color: '#333',
+                        fontSize: '14px',
+                        whiteSpace: 'pre-wrap',
+                        wordBreak: 'break-word',
+                        border: '1px solid #eee'
+                      }}>
+                        {item.doctor_notes}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Medical Reports */}
                   {item.medical_reports_summary && (
@@ -195,6 +234,7 @@ export function PatientMedicalHistoryPage() {
                   </p>
                 </div>
               )}
+              </div>
             </Card>
           ))}
         </div>

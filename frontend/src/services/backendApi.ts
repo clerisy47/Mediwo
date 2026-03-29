@@ -120,6 +120,7 @@ interface PatientHistoryResponse {
     doctor_specialization: string;
     medical_reports_summary: string;
     conversation_summary: string | null;
+    doctor_notes?: string;
     status: string;
     created_at: string;
   }>;

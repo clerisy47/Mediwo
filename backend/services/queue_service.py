@@ -47,7 +47,11 @@ def _get_patient_medical_info(patient_id: str) -> Dict:
         return {
             "medical_reports_summary": medical_reports[0]["summary"] if medical_reports else None,
             "intake_summary": patient_info[0]["conversation_summary"] if patient_info else None,
-            "patient_info_id": str(patient_info[0]["_id"]) if patient_info else None
+            "patient_info_id": (
+                patient_info[0].get("id")
+                if patient_info and patient_info[0].get("id")
+                else str(patient_info[0]["_id"]) if patient_info else None
+            )
         }
     except Exception as e:
         print(f"Error fetching patient medical info: {str(e)}")

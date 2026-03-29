@@ -1,12 +1,27 @@
 from typing import Dict, List, Optional
 from uuid import uuid4
 from datetime import datetime
+from bson import ObjectId
 
 import sys
 import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from database import get_database
+
+
+def _find_patient_info_record(patient_info_collection, info_id: str):
+    """Find patient info by app id first, then by Mongo ObjectId for backward compatibility."""
+    info = patient_info_collection.find_one({"id": info_id})
+    if info:
+        return info
+
+    if ObjectId.is_valid(info_id):
+        info = patient_info_collection.find_one({"_id": ObjectId(info_id)})
+        if info:
+            return info
+
+    return None
 
 
 def save_patient_medical_info(
@@ -198,7 +213,7 @@ def get_patient_info_by_id(info_id: str) -> Optional[Dict]:
     patient_info_collection = db["patient_info"]
     users_collection = db["users"]
     
-    info = patient_info_collection.find_one({"id": info_id})
+    info = _find_patient_info_record(patient_info_collection, info_id)
     
     if info:
         patient = users_collection.find_one({"id": info["patient_id"]})
@@ -232,8 +247,12 @@ def update_patient_info_status(info_id: str, status: str) -> bool:
     db = get_database()
     patient_info_collection = db["patient_info"]
     
+    info = _find_patient_info_record(patient_info_collection, info_id)
+    if not info:
+        return False
+
     result = patient_info_collection.update_one(
-        {"id": info_id},
+        {"_id": info["_id"]},
         {"$set": {"status": status, "updated_at": datetime.utcnow()}}
     )
     
@@ -254,6 +273,7 @@ def get_patient_info_history(patient_id: str) -> List[Dict]:
     db = get_database()
     patient_info_collection = db["patient_info"]
     users_collection = db["users"]
+    summaries_collection = db["medical_reports_summaries"]
     
     patient_infos = list(patient_info_collection.find({
         "patient_id": patient_id
@@ -268,9 +288,28 @@ def get_patient_info_history(patient_id: str) -> List[Dict]:
             "doctor_specialization": doctor.get("specialization", "General Practitioner") if doctor else "Unknown",
             "medical_reports_summary": info["medical_reports_summary"],
             "conversation_summary": info["conversation_summary"],
+            "doctor_notes": info.get("doctor_notes", ""),
             "status": info["status"],
             "created_at": info["created_at"]
         })
+
+    # Also include standalone uploaded medical report summaries so history tab is never empty.
+    uploaded_summaries = list(
+        summaries_collection.find({"patient_id": patient_id}).sort("created_at", -1)
+    )
+    for summary in uploaded_summaries:
+        result.append({
+            "id": str(summary.get("_id")),
+            "doctor_name": "Not reviewed yet",
+            "doctor_specialization": "Uploaded Medical Record",
+            "medical_reports_summary": summary.get("summary"),
+            "conversation_summary": None,
+            "doctor_notes": "",
+            "status": "uploaded",
+            "created_at": summary.get("created_at", datetime.utcnow()),
+        })
+
+    result.sort(key=lambda x: x.get("created_at", datetime.utcnow()), reverse=True)
     
     return result
 
@@ -289,8 +328,12 @@ def add_doctor_notes(info_id: str, doctor_notes: str) -> bool:
     db = get_database()
     patient_info_collection = db["patient_info"]
     
+    info = _find_patient_info_record(patient_info_collection, info_id)
+    if not info:
+        return False
+
     result = patient_info_collection.update_one(
-        {"id": info_id},
+        {"_id": info["_id"]},
         {"$set": {
             "doctor_notes": doctor_notes,
             "status": "reviewed",
@@ -315,7 +358,7 @@ def get_patient_info_with_notes(info_id: str) -> Optional[Dict]:
     patient_info_collection = db["patient_info"]
     users_collection = db["users"]
     
-    info = patient_info_collection.find_one({"id": info_id})
+    info = _find_patient_info_record(patient_info_collection, info_id)
     
     if info:
         patient = users_collection.find_one({"id": info["patient_id"]})

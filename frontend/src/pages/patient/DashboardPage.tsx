@@ -15,7 +15,7 @@ interface QueueStatus {
 export function DashboardPage() {
   const [user, setUser] = useState<any>(null);
   const [queueStatus, setQueueStatus] = useState<QueueStatus | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [currentTime, setCurrentTime] = useState<Date>(new Date());
 
   // Get current user from localStorage
   const getCurrentUser = () => {
@@ -27,6 +27,12 @@ export function DashboardPage() {
     const currentUser = getCurrentUser();
     setUser(currentUser);
     fetchQueueStatus(currentUser);
+
+    const interval = window.setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60_000);
+
+    return () => window.clearInterval(interval);
   }, []);
 
   const fetchQueueStatus = async (currentUser: any) => {
@@ -48,14 +54,12 @@ export function DashboardPage() {
       }
     } catch (err) {
       console.error('Failed to fetch queue status:', err);
-    } finally {
-      setLoading(false);
     }
   };
 
   const getWelcomeMessage = () => {
     if (!user) return 'Welcome';
-    const hour = new Date().getHours();
+    const hour = currentTime.getHours();
     const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
     return `${greeting}, ${user.full_name}`;
   };
