@@ -1,3 +1,15 @@
 {
-  "queues": {}
+  "queues": {
+    "c7e455eae4de42e992c24cdabc7bd85d": [
+      {
+        "queue_id": "567c4ecab57544788eacd000a61a7a61",
+        "patient_id": "a47a3a6d6efa411da20fd5734c6cc22c",
+        "patient_name": "Utsav Acharya",
+        "doctor_id": "c7e455eae4de42e992c24cdabc7bd85d",
+        "joined_at": "2026-03-29T07:45:03.091513",
+        "status": "waiting",
+        "estimated_wait_time": "0 min"
+      }
+    ]
+  }
 }

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { FileList } from '../../components/patient/FileList';
 import {
   FileUploader,
@@ -11,7 +11,7 @@ import { Card } from '../../components/ui/Card';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { StateView } from '../../components/ui/StateView';
 import { baseMedicalSummary } from '../../data/mockData';
-import { parseDocument } from '../../services/backendApi';
+import { parseDocument, saveMedicalReportsSummary, getMedicalReportsSummaries } from '../../services/backendApi';
 import type { AsyncState, MedicalSummary, UploadedReport } from '../../types/models';
 
 function buildSummaryFromReports(reports: UploadedReport[], narratives: string[]): MedicalSummary {
@@ -42,6 +42,32 @@ export function ProfilePage() {
   const [summaryState, setSummaryState] = useState<AsyncState>('empty');
   const [narratives, setNarratives] = useState<string[]>([]);
 
+  // Load saved medical reports summaries on page load
+  useEffect(() => {
+    const loadSavedSummaries = async () => {
+      try {
+        const userStr = localStorage.getItem('user');
+        const user = userStr ? JSON.parse(userStr) : null;
+        if (!user?.id) return;
+
+        const response = await getMedicalReportsSummaries(user.id);
+        if (response.success && response.summaries.length > 0) {
+          // Load the most recent summary
+          const latest = response.summaries[0];
+          const previousNarratives = response.summaries.map(s => s.summary);
+          
+          setNarratives(previousNarratives);
+          setSummary(buildSummaryFromReports([], previousNarratives));
+          setSummaryState('success');
+        }
+      } catch (error) {
+        console.error('Failed to load saved summaries:', error);
+      }
+    };
+
+    void loadSavedSummaries();
+  }, []);
+
   const onUploadReports = async (uploaded: UploadedReportPayload[]) => {
     const containsInvalidFile = uploaded.some(({ report }) => /error|corrupt/i.test(report.name));
 
@@ -67,6 +93,21 @@ export function ProfilePage() {
       setNarratives(nextNarratives);
       setSummary(buildSummaryFromReports(nextReports, nextNarratives));
       setSummaryState('success');
+
+      // Save the new summaries to the database
+      try {
+        const userStr = localStorage.getItem('user');
+        const user = userStr ? JSON.parse(userStr) : null;
+        if (user?.id) {
+          // Save each new summary to database
+          for (const narrative of parsedFiles.map((item) => item.parsedSummary)) {
+            await saveMedicalReportsSummary(user.id, narrative);
+          }
+        }
+      } catch (dbError) {
+        console.error('Failed to save summaries to database:', dbError);
+        // Don't fail the upload if database save fails
+      }
     } catch {
       setSummaryState('error');
     }

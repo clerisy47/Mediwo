@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { SidebarLayout } from '../components/ui/SidebarLayout';
 
 const doctorNav = [
-  { label: 'Patient Queue', path: '/doctor/queue' },
+  { label: 'Patients Ready for Review', path: '/doctor/queue' },
   { label: 'Consultation Flow', path: '/doctor/consultation' },
 ];
 

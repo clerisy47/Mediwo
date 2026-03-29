@@ -28,7 +28,7 @@ export function LandingPage() {
           <MediwoLogo />
         </NavLink>
         <nav>
-          <NavLink to="/auth" className="btn btn-secondary btn-sm">
+          <NavLink to="/patient/auth" className="btn btn-secondary btn-sm">
             Login
           </NavLink>
           <NavLink to="/patient/dashboard" className="btn btn-primary btn-sm">
@@ -48,7 +48,7 @@ export function LandingPage() {
           <NavLink to="/patient/dashboard" className="btn btn-primary btn-lg">
             Get Started
           </NavLink>
-          <NavLink to="/auth" className="btn btn-ghost btn-lg">
+          <NavLink to="/patient/auth" className="btn btn-ghost btn-lg">
             Login
           </NavLink>
         </div>

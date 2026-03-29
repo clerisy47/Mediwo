@@ -154,3 +154,4 @@ wrapt==2.1.1
 xxhash==3.6.0
 yarl==1.22.0
 zstandard==0.25.0
+pymongo==4.6.1

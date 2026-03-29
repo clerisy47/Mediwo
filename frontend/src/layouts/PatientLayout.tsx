@@ -7,6 +7,7 @@ const patientLinks = [
   { label: 'Book', path: '/patient/booking' },
   { label: 'Queue', path: '/patient/queue' },
   { label: 'Intake', path: '/patient/intake' },
+  { label: 'Medical History', path: '/patient/medical-history' },
   { label: 'Profile', path: '/patient/profile' },
 ];
 
@@ -29,7 +30,7 @@ export function PatientLayout() {
     // Clear user session
     localStorage.removeItem('user');
     // Redirect to login page
-    navigate('/auth');
+    navigate('/patient/auth');
   };
 
   return (

@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
@@ -81,6 +81,7 @@ export function AppointmentBookingPage() {
       const data = await response.json();
 
       if (response.ok) {
+        localStorage.setItem('selectedDoctorId', selectedDoctor.id);
         setBookingState('success');
         // Redirect to queue page after successful booking
         setTimeout(() => {

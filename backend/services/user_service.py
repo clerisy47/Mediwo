@@ -1,35 +1,23 @@
-import json
-import os
 from typing import Dict, List, Optional
 from uuid import uuid4
+from datetime import datetime
 
-USERS_FILE = os.path.join(os.path.dirname(__file__), "..", "data", "users.json")
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-
-def _load_users() -> Dict:
-    """Load users from JSON file"""
-    try:
-        with open(USERS_FILE, 'r') as f:
-            return json.load(f)
-    except FileNotFoundError:
-        return {"patients": [], "doctors": []}
-
-
-def _save_users(users: Dict) -> None:
-    """Save users to JSON file"""
-    os.makedirs(os.path.dirname(USERS_FILE), exist_ok=True)
-    with open(USERS_FILE, 'w') as f:
-        json.dump(users, f, indent=2)
+from database import get_database
 
 
 def register_patient(username: str, password: str, full_name: str = None) -> Dict:
-    """Register a new patient"""
-    users = _load_users()
+    """Register a new patient in MongoDB"""
+    db = get_database()
+    users_collection = db["users"]
     
     # Check if username already exists
-    for patient in users["patients"]:
-        if patient["username"] == username:
-            raise ValueError("Username already exists")
+    existing_user = users_collection.find_one({"username": username})
+    if existing_user:
+        raise ValueError("Username already exists")
     
     # Create new patient
     new_patient = {
@@ -38,11 +26,11 @@ def register_patient(username: str, password: str, full_name: str = None) -> Dic
         "password": password,  # In production, this should be hashed
         "full_name": full_name or username,
         "role": "patient",
-        "created_at": "2025-01-01T00:00:00Z"  # Simplified timestamp
+        "created_at": datetime.utcnow(),
+        "updated_at": datetime.utcnow()
     }
     
-    users["patients"].append(new_patient)
-    _save_users(users)
+    result = users_collection.insert_one(new_patient)
     
     return {
         "id": new_patient["id"],
@@ -53,13 +41,14 @@ def register_patient(username: str, password: str, full_name: str = None) -> Dic
 
 
 def register_doctor(username: str, password: str, full_name: str = None, specialization: str = None) -> Dict:
-    """Register a new doctor"""
-    users = _load_users()
+    """Register a new doctor in MongoDB"""
+    db = get_database()
+    users_collection = db["users"]
     
     # Check if username already exists
-    for doctor in users["doctors"]:
-        if doctor["username"] == username:
-            raise ValueError("Username already exists")
+    existing_user = users_collection.find_one({"username": username})
+    if existing_user:
+        raise ValueError("Username already exists")
     
     # Create new doctor
     new_doctor = {
@@ -70,11 +59,11 @@ def register_doctor(username: str, password: str, full_name: str = None, special
         "specialization": specialization or "General Practitioner",
         "role": "doctor",
         "available": True,
-        "created_at": "2025-01-01T00:00:00Z"  # Simplified timestamp
+        "created_at": datetime.utcnow(),
+        "updated_at": datetime.utcnow()
     }
     
-    users["doctors"].append(new_doctor)
-    _save_users(users)
+    result = users_collection.insert_one(new_doctor)
     
     return {
         "id": new_doctor["id"],
@@ -86,45 +75,103 @@ def register_doctor(username: str, password: str, full_name: str = None, special
 
 
 def authenticate_user(username: str, password: str) -> Optional[Dict]:
-    """Authenticate user by username and password"""
-    users = _load_users()
+    """Authenticate user by username and password from MongoDB"""
+    db = get_database()
+    users_collection = db["users"]
     
-    # Check patients
-    for patient in users["patients"]:
-        if patient["username"] == username and patient["password"] == password:
-            return {
-                "id": patient["id"],
-                "username": patient["username"],
-                "full_name": patient["full_name"],
-                "role": patient["role"]
-            }
+    user = users_collection.find_one({
+        "username": username,
+        "password": password
+    })
     
-    # Check doctors
-    for doctor in users["doctors"]:
-        if doctor["username"] == username and doctor["password"] == password:
-            return {
-                "id": doctor["id"],
-                "username": doctor["username"],
-                "full_name": doctor["full_name"],
-                "specialization": doctor["specialization"],
-                "role": doctor["role"]
-            }
+    if user:
+        return {
+            "id": user["id"],
+            "username": user["username"],
+            "full_name": user["full_name"],
+            "role": user["role"],
+            "specialization": user.get("specialization")  # Only for doctors
+        }
+    
+    return None
+
+
+def get_user_by_id(user_id: str) -> Optional[Dict]:
+    """Get user by ID from MongoDB"""
+    db = get_database()
+    users_collection = db["users"]
+    
+    user = users_collection.find_one({"id": user_id})
+    
+    if user:
+        return {
+            "id": user["id"],
+            "username": user["username"],
+            "full_name": user["full_name"],
+            "role": user["role"],
+            "specialization": user.get("specialization")
+        }
     
     return None
 
 
 def get_available_doctors() -> List[Dict]:
-    """Get list of available doctors"""
-    users = _load_users()
+    """Get list of available doctors from MongoDB"""
+    db = get_database()
+    users_collection = db["users"]
     
-    available_doctors = []
-    for doctor in users["doctors"]:
-        if doctor.get("available", True):
-            available_doctors.append({
-                "id": doctor["id"],
-                "username": doctor["username"],
-                "full_name": doctor["full_name"],
-                "specialization": doctor.get("specialization", "General Practitioner")
-            })
+    available_doctors = list(users_collection.find({
+        "role": "doctor",
+        "available": True
+    }))
     
-    return available_doctors
+    return [
+        {
+            "id": doctor["id"],
+            "username": doctor["username"],
+            "full_name": doctor["full_name"],
+            "specialization": doctor.get("specialization", "General Practitioner")
+        }
+        for doctor in available_doctors
+    ]
+
+
+def get_all_doctors() -> List[Dict]:
+    """Get all doctors from MongoDB"""
+    db = get_database()
+    users_collection = db["users"]
+    
+    all_doctors = list(users_collection.find({"role": "doctor"}))
+    
+    return [
+        {
+            "id": doctor["id"],
+            "username": doctor["username"],
+            "full_name": doctor["full_name"],
+            "specialization": doctor.get("specialization", "General Practitioner"),
+            "available": doctor.get("available", True)
+        }
+        for doctor in all_doctors
+    ]
+
+
+def get_patient_by_id(patient_id: str) -> Optional[Dict]:
+    """Get patient by ID from MongoDB"""
+    db = get_database()
+    users_collection = db["users"]
+    
+    patient = users_collection.find_one({
+        "id": patient_id,
+        "role": "patient"
+    })
+    
+    if patient:
+        return {
+            "id": patient["id"],
+            "username": patient["username"],
+            "full_name": patient["full_name"],
+            "role": patient["role"]
+        }
+    
+    return None
+

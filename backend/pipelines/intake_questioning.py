@@ -1,11 +1,9 @@
 import os
 from dotenv import load_dotenv
-from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
+from .timeout_llm import get_timeout_llm
 
 load_dotenv()
-api_keys = os.getenv("GOOGLE_API_KEY", "").split(",")
-api_keys = [key.strip() for key in api_keys if key.strip()]
 
 llm = None
 
@@ -25,22 +23,8 @@ SUMMARY_PROMPT = (
 
 
 def _get_llm():
-    global llm
-
-    if llm is not None:
-        return llm
-
-    if not api_keys:
-        raise RuntimeError("GOOGLE_API_KEY is not configured.")
-
-    primary_model = ChatGoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=api_keys[0])
-    fallback_models = [
-        ChatGoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=key)
-        for key in api_keys[1:]
-    ]
-
-    llm = primary_model.with_fallbacks(fallback_models)
-    return llm
+    """Get the timeout-aware LLM with fallback API keys"""
+    return get_timeout_llm(temperature=0.7)
 
 
 def get_initial_message():
@@ -59,8 +43,11 @@ def generate_assistant_reply(conversation):
         else:
             chat_history.append(AIMessage(content=message))
 
-    response = _get_llm().invoke(chat_history)
-    return response.content
+    try:
+        response = _get_llm().invoke(chat_history)
+        return response
+    except Exception as e:
+        raise RuntimeError(f"Failed to generate assistant reply: {str(e)}")
 
 
 def generate_intake_summary(conversation):
@@ -73,8 +60,11 @@ def generate_intake_summary(conversation):
         HumanMessage(content=f"Summarize this conversation:\n\n{conversation_text}"),
     ]
 
-    summary_response = _get_llm().invoke(summary_request)
-    return summary_response.content
+    try:
+        summary_response = _get_llm().invoke(summary_request)
+        return summary_response
+    except Exception as e:
+        raise RuntimeError(f"Failed to generate intake summary: {str(e)}")
 
 def run_mediwo_chatbot():
     print("--- Mediwo Terminal Intake (Type 'exit' to finish) ---")

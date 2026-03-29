@@ -2,6 +2,14 @@ export type AsyncState = 'loading' | 'processing' | 'empty' | 'error' | 'success
 
 export type QueueUrgency = 'waiting' | 'near-turn' | 'now-serving';
 
+export interface User {
+  id: string;
+  username: string;
+  full_name: string;
+  role: 'patient' | 'doctor';
+  specialization?: string;
+}
+
 export interface Appointment {
   department: string;
   doctor: string;
@@ -45,3 +53,31 @@ export interface SidebarNavItem {
   label: string;
   path: string;
 }
+
+// MongoDB Patient Medical Info Types
+export interface PatientMedicalInfo {
+  id: string;
+  patient_id: string;
+  patient_name: string;
+  patient_username?: string;
+  doctor_id: string;
+  doctor_name?: string;
+  doctor_specialization?: string;
+  medical_reports_summary: string;
+  conversation_summary: string;
+  doctor_notes?: string;
+  status: 'pending' | 'reviewed' | 'completed';
+  created_at: string;
+  updated_at?: string;
+}
+
+export interface PatientMedicalHistoryItem {
+  id: string;
+  doctor_name: string;
+  doctor_specialization: string;
+  medical_reports_summary: string;
+  conversation_summary: string;
+  status: string;
+  created_at: string;
+}
+

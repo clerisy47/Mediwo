@@ -18,7 +18,7 @@ export function SidebarLayout({ title, subtitle, navItems, userLabel, showLogout
     // Clear user session
     localStorage.removeItem('user');
     // Redirect to login page
-    navigate('/auth');
+    navigate('/patient/auth');
   };
   return (
     <div className="dashboard-shell">

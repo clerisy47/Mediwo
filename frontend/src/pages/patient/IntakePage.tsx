@@ -72,7 +72,27 @@ export function IntakePage() {
     setError(null);
 
     try {
-      const response = await completeIntakeSession(sessionId);
+      // Get user info from localStorage
+      const userStr = localStorage.getItem('user');
+      const user = userStr ? JSON.parse(userStr) : null;
+      const patientId = user?.id;
+
+      let selectedDoctorId = localStorage.getItem('selectedDoctorId');
+      if (!selectedDoctorId && patientId) {
+        const queueResponse = await fetch(`http://localhost:8000/api/queue/patient/${patientId}`);
+        const queueData = await queueResponse.json();
+        const queueDoctorId = queueData?.success ? queueData?.queue_status?.doctor_id : null;
+        if (typeof queueDoctorId === 'string' && queueDoctorId) {
+          selectedDoctorId = queueDoctorId;
+          localStorage.setItem('selectedDoctorId', queueDoctorId);
+        }
+      }
+
+      if (!selectedDoctorId) {
+        throw new Error('No doctor linked to this intake. Please book an appointment first.');
+      }
+
+      const response = await completeIntakeSession(sessionId, patientId, selectedDoctorId);
       setSummary(response.summary);
       setCompleted(true);
       setMessages((prev) => [

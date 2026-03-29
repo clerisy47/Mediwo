@@ -1,3 +1,14 @@
 {
-  "summaries": []
+  "summaries": [
+    {
+      "id": "735e97fdfaf5416e805017c8fd23ebde",
+      "patient_id": "a47a3a6d6efa411da20fd5734c6cc22c",
+      "doctor_id": "c7e455eae4de42e992c24cdabc7bd85d",
+      "session_id": "c864db76fff945579bf914b348ec4e81",
+      "conversation_summary": "The provided conversation only contains the intake assistant's greeting (\"Hello, I am your Mediwo Assistant. What brings you to the clinic today?\"). There is no patient information, reported symptoms, timeline, or medical history discussed. Therefore, a summary cannot be generated at this time.",
+      "documents_summary": null,
+      "created_at": "2026-03-29T10:00:39.644527",
+      "status": "pending_review"
+    }
+  ]
 }
