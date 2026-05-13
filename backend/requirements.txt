@@ -59,7 +59,7 @@ langchain-community==0.4.1
 langchain-core==1.2.8
 # Ollama client bindings. The project defaults to the `mistral-nemo` model
 # served by a local Ollama instance. Override with `OLLAMA_MODEL` env var
-# (e.g. `OLLAMA_MODEL=llama3.2:3b`).
+# (e.g. `OLLAMA_MODEL=mistral-nemo`).
 langchain-ollama==0.3.10
 langchain-text-splitters==1.1.0
 langdetect==1.0.9

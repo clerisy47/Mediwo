@@ -19,6 +19,7 @@ except ModuleNotFoundError:
     pytesseract = _PytesseractFallback()
 
 from langchain_ollama import ChatOllama
+from .llm_invoker import get_timeout_llm
 
 load_dotenv()
 
@@ -77,8 +78,8 @@ def _extract_text_from_document(file_path):
 
 
 def summarize_with_ocr(file_path):
-    # Get the LLM
-    llm = _get_llm()
+    # Get the LLM with timeout
+    timeout_llm = get_timeout_llm(temperature=0)
     
     # Build the document content from OCR/text extraction before sending it to the LLM
     full_text = _extract_text_from_document(file_path)
@@ -100,8 +101,7 @@ def summarize_with_ocr(file_path):
     ]
     
     print("Generating summary...")
-    summary_response = timeout_llm.invoke(messages)
-    summary = summary_response.content
+    summary = timeout_llm.invoke(messages)
     
     return summary
 
