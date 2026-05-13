@@ -17,7 +17,11 @@ TIMEOUT_SECONDS = 60
 
 def get_model_name() -> str:
     """Load the Ollama model name from the environment."""
-    return os.getenv("OLLAMA_MODEL", "llama3.2:3b")
+    # Previously defaulted to the Llama model "llama3.2:3b".
+    # Keep the original value commented here for reference.
+    # OLD_DEFAULT = "llama3.2:3b"
+    # Now default to the Mistral model served by Ollama.
+    return os.getenv("OLLAMA_MODEL", "mistral-nemo")
 
 
 def get_base_url() -> str:
