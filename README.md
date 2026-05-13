@@ -63,7 +63,7 @@ Open the provided local URL in your browser. You can toggle between **Patient MV
 
 ## Ollama model
 
-The backend uses a local Ollama model. By default the project is configured to use the `mistral-nemo` model. To override this, set the `OLLAMA_MODEL` environment variable (for example: `OLLAMA_MODEL=mistral-nemo`).
+The backend uses a local Ollama model. By default the project is configured to use the `llama3.2:3b` model. To override this, set the `OLLAMA_MODEL` environment variable (for example: `OLLAMA_MODEL=llama3.2:3b`).
 
 ---
 

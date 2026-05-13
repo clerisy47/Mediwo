@@ -57,9 +57,9 @@ langchain==1.2.8
 langchain-classic==1.0.1
 langchain-community==0.4.1
 langchain-core==1.2.8
-# Ollama client bindings. The project defaults to the `mistral-nemo` model
+# Ollama client bindings. The project defaults to the `llama3.2:3b` model
 # served by a local Ollama instance. Override with `OLLAMA_MODEL` env var
-# (e.g. `OLLAMA_MODEL=mistral-nemo`).
+# (e.g. `OLLAMA_MODEL=llama3.2:3b`).
 langchain-ollama==0.3.10
 langchain-text-splitters==1.1.0
 langdetect==1.0.9
@@ -108,7 +108,7 @@ pydantic==2.12.5
 pydantic-settings==2.12.0
 pydantic_core==2.41.5
 # Ollama Python client used to communicate with the local Ollama server.
-# Keep this client; models (like `mistral-nemo`) are specified via OLLAMA_MODEL.
+# Keep this client; models (like `llama3.2:3b`) are specified via OLLAMA_MODEL.
 ollama==0.6.1
 pyparsing==3.3.2
 pypdf==6.6.2

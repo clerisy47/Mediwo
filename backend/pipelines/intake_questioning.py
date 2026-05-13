@@ -51,7 +51,7 @@ DOCTOR_SUGGESTIONS_PROMPT = (
 
 def _get_llm():
     """Get the Ollama LLM."""
-    model_name = os.getenv("OLLAMA_MODEL", "mistral-nemo")
+    model_name = os.getenv("OLLAMA_MODEL", "llama3.2:3b")
     base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
     return ChatOllama(
         model=model_name,
