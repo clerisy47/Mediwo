@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ChangeEvent } from 'react';
 import { FileList } from '../../components/patient/FileList';
 import {
   FileUploader,
@@ -37,10 +37,27 @@ function buildSummaryFromReports(reports: UploadedReport[], narratives: string[]
 }
 
 export function ProfilePage() {
+  const [profileInfo, setProfileInfo] = useState(() => {
+    const userStr = localStorage.getItem('user');
+    const savedProfileStr = localStorage.getItem('patientProfile');
+
+    const user = userStr ? JSON.parse(userStr) : null;
+    const savedProfile = savedProfileStr ? JSON.parse(savedProfileStr) : null;
+
+    return {
+      name: savedProfile?.name ?? user?.full_name ?? user?.fullName ?? user?.name ?? 'Patient Name',
+      age: savedProfile?.age ?? '31',
+      gender: savedProfile?.gender ?? 'Male',
+    };
+  });
   const [reports, setReports] = useState<UploadedReport[]>([]);
   const [summary, setSummary] = useState<MedicalSummary>(baseMedicalSummary);
   const [summaryState, setSummaryState] = useState<AsyncState>('empty');
   const [narratives, setNarratives] = useState<string[]>([]);
+
+  useEffect(() => {
+    localStorage.setItem('patientProfile', JSON.stringify(profileInfo));
+  }, [profileInfo]);
 
   // Load saved medical reports summaries on page load
   useEffect(() => {
@@ -131,6 +148,17 @@ export function ProfilePage() {
     return `Summary refreshed at ${new Date(summary.generatedAt).toLocaleTimeString()}`;
   }, [summary.generatedAt, summaryState]);
 
+  const onProfileFieldChange =
+    (field: 'name' | 'age' | 'gender') => (event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+      const nextValue =
+        field === 'age' ? event.target.value.replace(/[^\d]/g, '').slice(0, 3) : event.target.value;
+
+      setProfileInfo((previous) => ({
+        ...previous,
+        [field]: nextValue,
+      }));
+    };
+
   return (
     <div className="page-stack">
       <PageHeader
@@ -139,16 +167,35 @@ export function ProfilePage() {
       />
 
       <Card title="Personal Info">
-        <div className="info-grid">
-          <p>
-            <strong>Name:</strong> Utsav Acharya
-          </p>
-          <p>
-            <strong>Age:</strong> 31
-          </p>
-          <p>
-            <strong>Gender:</strong> Male
-          </p>
+        <div className="info-grid profile-info-form">
+          <label>
+            Name
+            <input
+              type="text"
+              value={profileInfo.name}
+              onChange={onProfileFieldChange('name')}
+              placeholder="Enter your name"
+            />
+          </label>
+          <label>
+            Age
+            <input
+              type="text"
+              inputMode="numeric"
+              value={profileInfo.age}
+              onChange={onProfileFieldChange('age')}
+              placeholder="Enter age"
+            />
+          </label>
+          <label>
+            Gender
+            <select value={profileInfo.gender} onChange={onProfileFieldChange('gender')}>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+              <option value="Other">Other</option>
+              <option value="Prefer not to say">Prefer not to say</option>
+            </select>
+          </label>
         </div>
       </Card>
 

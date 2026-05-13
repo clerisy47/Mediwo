@@ -529,7 +529,8 @@ ul {
 }
 
 .auth-form label,
-.booking-form label {
+.booking-form label,
+.profile-info-form label {
   display: grid;
   gap: 6px;
   font-size: 14px;
@@ -538,6 +539,8 @@ ul {
 
 .auth-form input,
 .booking-form select,
+.profile-info-form input,
+.profile-info-form select,
 .chat-input-row input,
 .rich-editor textarea {
   width: 100%;
@@ -551,6 +554,8 @@ ul {
 
 .auth-form input:focus,
 .booking-form select:focus,
+.profile-info-form input:focus,
+.profile-info-form select:focus,
 .chat-input-row input:focus,
 .rich-editor textarea:focus {
   outline: 2px solid rgba(15, 118, 110, 0.26);

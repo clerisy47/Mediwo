@@ -2,9 +2,9 @@
 Timeout-aware LLM wrapper with API key fallback.
 If a model call fails, retry with another randomly selected API key.
 """
-import asyncio
 import os
 import random
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
 from typing import List
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import BaseMessage
@@ -47,18 +47,15 @@ class TimeoutLLM:
             google_api_key=current_key
         )
     
-    async def _invoke_async(self, messages: List[BaseMessage], timeout: int = TIMEOUT_SECONDS):
-        """Invoke model with timeout"""
-        try:
-            # LangChain doesn't have native async invoke, so we run in executor with timeout
-            loop = asyncio.get_event_loop()
-            result = await asyncio.wait_for(
-                loop.run_in_executor(None, lambda: self.model.invoke(messages)),
-                timeout=timeout
-            )
-            return result
-        except asyncio.TimeoutError:
-            raise TimeoutError(f"Model call timed out after {timeout} seconds")
+    def _invoke_with_timeout(self, messages: List[BaseMessage], timeout: int = TIMEOUT_SECONDS):
+        """Invoke model with a hard timeout in a worker thread."""
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(self.model.invoke, messages)
+            try:
+                return future.result(timeout=timeout)
+            except FuturesTimeoutError:
+                future.cancel()
+                raise TimeoutError(f"Model call timed out after {timeout} seconds")
     
     def invoke(self, messages: List[BaseMessage]) -> str:
         """
@@ -82,17 +79,9 @@ class TimeoutLLM:
 
             try:
                 print(f"\n[LLM Call] Using random API key #{self.current_key_index + 1}/{len(self.api_keys)}")
-                
-                # Try to run with timeout
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-                try:
-                    result = loop.run_until_complete(
-                        self._invoke_async(messages, timeout=TIMEOUT_SECONDS)
-                    )
-                    return result.content
-                finally:
-                    loop.close()
+
+                result = self._invoke_with_timeout(messages, timeout=TIMEOUT_SECONDS)
+                return result.content
                     
             except TimeoutError:
                 print(f"[TIMEOUT] API key #{self.current_key_index + 1} timed out after {TIMEOUT_SECONDS}s")
