@@ -16,14 +16,16 @@ SYSTEM_PROMPT = (
 
 SUMMARY_PROMPT = (
     "You are a medical scribe. Based on the following conversation between a "
-    "patient and an intake assistant, generate a professional 2-paragraph summary "
-    "for a doctor. Focus on symptoms, timeline, and critical flags like allergies "
-    "or prior treatments. Use a structured clinical tone."
+    "patient and an intake assistant, generate a professional Markdown summary "
+    "for a doctor. Use a top-level heading, bold key clinical labels, bullet points, "
+    "and a markdown table when you can condense symptoms, timeline, allergies, or prior treatments. "
+    "Focus on symptoms, timeline, and critical flags like allergies or prior treatments. "
+    "Use a structured clinical tone and return Markdown only."
 )
 
 
 def _get_llm():
-    """Get the timeout-aware LLM with fallback API keys"""
+    """Get the timeout-aware Ollama LLM."""
     return get_timeout_llm(temperature=0.7)
 
 

@@ -1,12 +1,11 @@
 """
-Timeout-aware LLM wrapper with API key fallback.
-If a model call fails, retry with another randomly selected API key.
+Timeout-aware LLM wrapper for the local Ollama model.
+If a model call fails or times out, surface a clear runtime error.
 """
 import os
-import random
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
 from typing import List
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_ollama import ChatOllama
 from langchain_core.messages import BaseMessage
 from dotenv import load_dotenv
 
@@ -16,35 +15,31 @@ load_dotenv()
 TIMEOUT_SECONDS = 60
 
 
-def get_api_keys() -> List[str]:
-    """Load and parse API keys from environment"""
-    api_keys = os.getenv("GOOGLE_API_KEY", "").split(",")
-    api_keys = [key.strip() for key in api_keys if key.strip()]
-    return api_keys
+def get_model_name() -> str:
+    """Load the Ollama model name from the environment."""
+    return os.getenv("OLLAMA_MODEL", "llama3.2:3b")
+
+
+def get_base_url() -> str:
+    """Load the Ollama server URL from the environment."""
+    return os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 
 
 class TimeoutLLM:
-    """LLM wrapper that implements timeout with fallback to alternative API keys."""
+    """LLM wrapper that implements timeout for a local Ollama chat model."""
     
-    def __init__(self, model_name: str = "gemini-2.5-flash", temperature: float = 0.7):
-        self.model_name = model_name
+    def __init__(self, model_name: str | None = None, temperature: float = 0.7):
+        self.model_name = model_name or get_model_name()
         self.temperature = temperature
-        self.api_keys = get_api_keys()
-        
-        if not self.api_keys:
-            raise RuntimeError("GOOGLE_API_KEY is not configured.")
-        
-        self.current_key_index = 0
-        self._create_model(random.randrange(len(self.api_keys)))
-    
-    def _create_model(self, key_index: int):
-        """Create model with a specific API key index"""
-        self.current_key_index = key_index
-        current_key = self.api_keys[key_index]
-        self.model = ChatGoogleGenerativeAI(
+        self.base_url = get_base_url()
+        self._create_model()
+
+    def _create_model(self):
+        """Create the Ollama chat model client."""
+        self.model = ChatOllama(
             model=self.model_name,
             temperature=self.temperature,
-            google_api_key=current_key
+            base_url=self.base_url,
         )
     
     def _invoke_with_timeout(self, messages: List[BaseMessage], timeout: int = TIMEOUT_SECONDS):
@@ -59,49 +54,28 @@ class TimeoutLLM:
     
     def invoke(self, messages: List[BaseMessage]) -> str:
         """
-        Invoke model with timeout and fallback to next API key if timeout occurs.
+        Invoke model with timeout and raise a clear error on failure.
         
         Args:
             messages: List of messages to send to the model
             
         Returns:
             Response content from the model
-            
-        Raises:
-            RuntimeError: If all API keys fail
         """
-        key_indexes = list(range(len(self.api_keys)))
-        random.shuffle(key_indexes)
-        max_attempts = len(key_indexes)
+        try:
+            print(f"\n[LLM Call] Using Ollama model {self.model_name} at {self.base_url}")
+            result = self._invoke_with_timeout(messages, timeout=TIMEOUT_SECONDS)
+            return result.content
 
-        for attempt, key_index in enumerate(key_indexes, start=1):
-            self._create_model(key_index)
+        except TimeoutError:
+            raise RuntimeError(
+                f"Ollama model '{self.model_name}' timed out after {TIMEOUT_SECONDS} seconds"
+            )
 
-            try:
-                print(f"\n[LLM Call] Using random API key #{self.current_key_index + 1}/{len(self.api_keys)}")
-
-                result = self._invoke_with_timeout(messages, timeout=TIMEOUT_SECONDS)
-                return result.content
-                    
-            except TimeoutError:
-                print(f"[TIMEOUT] API key #{self.current_key_index + 1} timed out after {TIMEOUT_SECONDS}s")
-
-                if attempt >= max_attempts:
-                    raise RuntimeError(
-                        f"All {max_attempts} API keys timed out after {TIMEOUT_SECONDS}s each"
-                    )
-                print("[FALLBACK] Retrying with another random API key")
-            
-            except Exception as e:
-                print(f"[ERROR] API key #{self.current_key_index + 1} failed: {str(e)}")
-
-                if attempt >= max_attempts:
-                    raise RuntimeError(
-                        f"All {max_attempts} API keys failed. Last error: {str(e)}"
-                    )
-                print("[FALLBACK] Retrying with another random API key")
-        
-        raise RuntimeError("Failed to get response from any API key")
+        except Exception as e:
+            raise RuntimeError(
+                f"Failed to generate a response from Ollama model '{self.model_name}' at {self.base_url}: {str(e)}"
+            )
 
 
 # Global instance
@@ -109,9 +83,9 @@ _timeout_llm = None
 
 
 def get_timeout_llm(temperature: float = 0.7) -> TimeoutLLM:
-    """Get or create the global TimeoutLLM instance"""
+    """Get or create the global TimeoutLLM instance."""
     global _timeout_llm
     
     # Create fresh instance each time to avoid stale state
-    _timeout_llm = TimeoutLLM(model_name="gemini-2.5-flash", temperature=temperature)
+    _timeout_llm = TimeoutLLM(temperature=temperature)
     return _timeout_llm

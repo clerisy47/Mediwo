@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Card } from '../../components/ui/Card';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { Button } from '../../components/ui/Button';
+import { MarkdownText } from '../../components/ui/MarkdownText';
 import { getPatientMedicalInfo, addDoctorNotes } from '../../services/backendApi';
 
 interface PatientDetailsInfo {
@@ -161,10 +162,9 @@ export function PatientDetailsPage() {
           borderRadius: '6px',
           lineHeight: '1.6',
           color: '#333',
-          whiteSpace: 'pre-wrap',
           wordBreak: 'break-word'
         }}>
-          {info.conversation_summary || 'No intake conversation available.'}
+          <MarkdownText content={info.conversation_summary || 'No intake conversation available.'} />
         </div>
       </Card>
 
@@ -178,10 +178,9 @@ export function PatientDetailsPage() {
             borderRadius: '6px',
             lineHeight: '1.6',
             color: '#333',
-            whiteSpace: 'pre-wrap',
             wordBreak: 'break-word'
           }}>
-            {info.medical_reports_summary}
+            <MarkdownText content={info.medical_reports_summary} />
           </div>
         </Card>
       )}

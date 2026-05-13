@@ -359,7 +359,8 @@ All documentation files are in the project root:
 
 ### Environment Variables (`.env`)
 ```
-GOOGLE_API_KEY=...
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_MODEL=llama3.2:3b
 MONGODB_URL=mongodb+srv://clerisy47:nenOA2qIDG0wD9uM@cluster0.87bdjhd.mongodb.net/?appName=Cluster0
 DATABASE_NAME=mediwo
 ```

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Card } from '../../components/ui/Card';
+import { MarkdownText } from '../../components/ui/MarkdownText';
 import { PageHeader } from '../../components/ui/PageHeader';
 import {
   completeIntakeSession,
@@ -180,7 +181,7 @@ export function IntakePage() {
         {completed && summary && (
           <div className="summary-section">
             <h4>Doctor Summary</h4>
-            <p>{summary}</p>
+            <MarkdownText content={summary} />
           </div>
         )}
       </Card>

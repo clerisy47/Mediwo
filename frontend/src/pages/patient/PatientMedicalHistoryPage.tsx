@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '../../components/ui/Card';
+import { MarkdownText } from '../../components/ui/MarkdownText';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { Button } from '../../components/ui/Button';
 import { getPatientMedicalHistory } from '../../services/backendApi';
@@ -178,11 +179,10 @@ export function PatientMedicalHistoryPage() {
                       lineHeight: '1.6',
                       color: '#333',
                       fontSize: '14px',
-                      whiteSpace: 'pre-wrap',
                       wordBreak: 'break-word',
                       border: '1px solid #eee'
                     }}>
-                      {item.conversation_summary || 'No intake conversation summary available yet.'}
+                      <MarkdownText content={item.conversation_summary || 'No intake conversation summary available yet.'} />
                     </div>
                   </div>
 
@@ -220,11 +220,10 @@ export function PatientMedicalHistoryPage() {
                         lineHeight: '1.6',
                         color: '#333',
                         fontSize: '14px',
-                        whiteSpace: 'pre-wrap',
                         wordBreak: 'break-word',
                         border: '1px solid #eee'
                       }}>
-                        {item.medical_reports_summary}
+                          <MarkdownText content={item.medical_reports_summary} />
                       </div>
                     </div>
                   )}
