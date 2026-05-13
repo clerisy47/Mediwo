@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv
 from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
-from .timeout_llm import get_timeout_llm
+from langchain_ollama import ChatOllama
 
 load_dotenv()
 
@@ -50,8 +50,14 @@ DOCTOR_SUGGESTIONS_PROMPT = (
 
 
 def _get_llm():
-    """Get the timeout-aware Ollama LLM."""
-    return get_timeout_llm(temperature=0.7)
+    """Get the Ollama LLM."""
+    model_name = os.getenv("OLLAMA_MODEL", "mistral-nemo")
+    base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+    return ChatOllama(
+        model=model_name,
+        temperature=0.7,
+        base_url=base_url,
+    )
 
 
 def get_initial_message():
@@ -72,7 +78,7 @@ def generate_assistant_reply(conversation):
 
     try:
         response = _get_llm().invoke(chat_history)
-        return response
+        return response.content
     except Exception as e:
         raise RuntimeError(f"Failed to generate assistant reply: {str(e)}")
 
@@ -89,7 +95,7 @@ def generate_intake_summary(conversation):
 
     try:
         summary_response = _get_llm().invoke(summary_request)
-        return summary_response
+        return summary_response.content
     except Exception as e:
         raise RuntimeError(f"Failed to generate intake summary: {str(e)}")
 
@@ -121,14 +127,14 @@ def generate_doctor_suggestions(
         suggestion_response = _get_llm().invoke(suggestion_request)
         # Parse numbered list into individual suggestions
         suggestions = []
-        for line in suggestion_response.strip().split('\n'):
+        for line in suggestion_response.content.strip().split('\n'):
             line = line.strip()
             if line and line[0].isdigit():  # Line starts with a number
                 # Remove numbering (e.g., "1. " or "1) ")
                 cleaned = line.split('.', 1)[-1].split(')', 1)[-1].strip()
                 if cleaned:
                     suggestions.append(cleaned)
-        return suggestions if suggestions else [suggestion_response]  # Fallback if parsing fails
+        return suggestions if suggestions else [suggestion_response.content]  # Fallback if parsing fails
     except Exception as e:
         raise RuntimeError(f"Failed to generate doctor suggestions: {str(e)}")
 

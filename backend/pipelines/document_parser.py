@@ -18,14 +18,20 @@ except ModuleNotFoundError:
 
     pytesseract = _PytesseractFallback()
 
-from .timeout_llm import get_timeout_llm
+from langchain_ollama import ChatOllama
 
 load_dotenv()
 
 
 def _get_llm():
-    """Get the timeout-aware Ollama LLM."""
-    return get_timeout_llm(temperature=0)
+    """Get the Ollama LLM."""
+    model_name = os.getenv("OLLAMA_MODEL", "mistral-nemo")
+    base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+    return ChatOllama(
+        model=model_name,
+        temperature=0,
+        base_url=base_url,
+    )
 
 
 def _extract_text_from_image(file_path):
@@ -71,8 +77,8 @@ def _extract_text_from_document(file_path):
 
 
 def summarize_with_ocr(file_path):
-    # Get the timeout-aware LLM with fallback
-    timeout_llm = _get_llm()
+    # Get the LLM
+    llm = _get_llm()
     
     # Build the document content from OCR/text extraction before sending it to the LLM
     full_text = _extract_text_from_document(file_path)
@@ -94,7 +100,8 @@ def summarize_with_ocr(file_path):
     ]
     
     print("Generating summary...")
-    summary = timeout_llm.invoke(messages)
+    summary_response = timeout_llm.invoke(messages)
+    summary = summary_response.content
     
     return summary
 
