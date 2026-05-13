@@ -23,6 +23,31 @@ SUMMARY_PROMPT = (
     "Use a structured clinical tone and return Markdown only."
 )
 
+DOCTOR_SUGGESTIONS_PROMPT = (
+    "You are creating comprehensive clinical note entries for a doctor to document in patient medical records. "
+    "Given a patient's medical report summary and intake conversation summary, "
+    "generate 8-12 specific clinical recommendations covering: diagnostic tests/investigations, medications, procedures, referrals, lifestyle advice, and follow-up plans. "
+    "Each entry should be written as if documenting what the doctor advised, prescribed, or ordered for the patient during consultation. "
+    "Format entries to start with action verbs like: 'Patient advised to', 'Counseled patient on', 'Prescribed', 'Ordered', 'Referral to', 'Discussed', 'Educated patient on', 'Scheduled'. "
+    "Include specific medications, test names, dosages where appropriate. "
+    "Examples of good entries: "
+    "'Prescribed Tab Metformin 500mg twice daily with meals for glycemic control' "
+    "'Ordered ECG and troponin levels to evaluate for cardiac involvement' "
+    "'Patient advised to practice stress management techniques such as meditation or yoga' "
+    "'Counseled patient on family history risk factors for cardiovascular disease and need for monitoring' "
+    "'Recommended dietary modifications including increase in omega-3 fatty acids and reduction in salt intake' "
+    "'Referral to cardiology for further evaluation if symptoms persist beyond 2 weeks' "
+    "'Ordered complete blood count and lipid panel to assess baseline metabolic status' "
+    "'Prescribed Atorvastatin 20mg at bedtime for cholesterol management' "
+    "'Patient educated on chest pain warning signs and advised to seek emergency care if severe symptoms develop' "
+    "'Scheduled follow-up appointment in 2 weeks to review test results and adjust treatment plan'. "
+    "Return ONLY a numbered list with each clinical note entry on its own line, like:\n"
+    "1. Clinical note entry here\n"
+    "2. Another clinical note entry here\n"
+    "etc.\n"
+    "Do not include any other text, headers, or explanations. Only the numbered list."
+)
+
 
 def _get_llm():
     """Get the timeout-aware Ollama LLM."""
@@ -67,6 +92,45 @@ def generate_intake_summary(conversation):
         return summary_response
     except Exception as e:
         raise RuntimeError(f"Failed to generate intake summary: {str(e)}")
+
+
+def generate_doctor_suggestions(
+    medical_reports_summary: str,
+    conversation_summary: str,
+) -> list:
+    """Generate discrete doctor-facing suggestions from report and conversation summaries.
+    Returns a list of individual suggestion strings."""
+    report_text = (medical_reports_summary or "").strip()
+    conversation_text = (conversation_summary or "").strip()
+
+    if not report_text and not conversation_text:
+        raise RuntimeError("Cannot generate suggestions without report or conversation summary")
+
+    suggestion_request = [
+        SystemMessage(content=DOCTOR_SUGGESTIONS_PROMPT),
+        HumanMessage(
+            content=(
+                "Create suggestions from the following patient context.\n\n"
+                f"Medical report summary:\n{report_text or 'Not available'}\n\n"
+                f"Intake conversation summary:\n{conversation_text or 'Not available'}"
+            )
+        ),
+    ]
+
+    try:
+        suggestion_response = _get_llm().invoke(suggestion_request)
+        # Parse numbered list into individual suggestions
+        suggestions = []
+        for line in suggestion_response.strip().split('\n'):
+            line = line.strip()
+            if line and line[0].isdigit():  # Line starts with a number
+                # Remove numbering (e.g., "1. " or "1) ")
+                cleaned = line.split('.', 1)[-1].split(')', 1)[-1].strip()
+                if cleaned:
+                    suggestions.append(cleaned)
+        return suggestions if suggestions else [suggestion_response]  # Fallback if parsing fails
+    except Exception as e:
+        raise RuntimeError(f"Failed to generate doctor suggestions: {str(e)}")
 
 def run_mediwo_chatbot():
     print("--- Mediwo Terminal Intake (Type 'exit' to finish) ---")

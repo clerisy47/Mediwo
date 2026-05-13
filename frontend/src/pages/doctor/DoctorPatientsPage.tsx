@@ -127,26 +127,6 @@ export function DoctorPatientsPage() {
                 <p style={{ margin: '0 0 4px 0' }}>Estimated Wait: <strong>{patient.estimated_wait_time}</strong></p>
               </div>
 
-              <div style={{ marginBottom: '15px', fontSize: '13px' }}>
-                <p style={{ margin: '0 0 8px 0', fontWeight: '500', color: '#333' }}>
-                  Intake Summary:
-                </p>
-                <p style={{ margin: 0, color: '#666', lineHeight: '1.5', maxHeight: '100px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {patient.intake_summary || 'No intake conversation yet (null summary).' }
-                </p>
-              </div>
-
-              {patient.medical_reports_summary && (
-                <div style={{ marginBottom: '15px', fontSize: '13px' }}>
-                  <p style={{ margin: '0 0 8px 0', fontWeight: '500', color: '#333' }}>
-                    Medical Reports Summary:
-                  </p>
-                  <p style={{ margin: 0, color: '#666', lineHeight: '1.5', maxHeight: '80px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {patient.medical_reports_summary}
-                  </p>
-                </div>
-              )}
-
               <div style={{ fontSize: '12px', color: '#999', marginBottom: '15px' }}>
                 Appointment time: {new Date(patient.joined_at).toLocaleDateString()} at {new Date(patient.joined_at).toLocaleTimeString()}
               </div>

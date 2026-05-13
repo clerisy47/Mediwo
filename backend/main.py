@@ -13,6 +13,7 @@ from pipelines.document_parser import summarize_with_ocr
 from pipelines.intake_questioning import (
     generate_assistant_reply,
     generate_intake_summary,
+    generate_doctor_suggestions,
     get_initial_message,
 )
 from services.user_service import (
@@ -139,6 +140,11 @@ class DoctorNotesRequest(BaseModel):
 
 class MedicalReportsSummaryRequest(BaseModel):
     summary: str
+
+
+class DoctorRecommendationRequest(BaseModel):
+    medical_reports_summary: Optional[str] = None
+    conversation_summary: Optional[str] = None
 
 
 @app.get("/")
@@ -485,6 +491,21 @@ async def parse_document(file: UploadFile = File(...)):
             os.remove(temp_path)
 
     return {"fileName": file.filename, "summary": summary}
+
+
+@app.post("/api/doctor/suggestions")
+def generate_doctor_suggestions_endpoint(payload: DoctorRecommendationRequest):
+    """Generate doctor-facing suggestions from report and conversation summaries."""
+    try:
+        suggestions = generate_doctor_suggestions(
+            medical_reports_summary=payload.medical_reports_summary or "",
+            conversation_summary=payload.conversation_summary or "",
+        )
+        return {"success": True, "suggestions": suggestions}
+    except RuntimeError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Failed to generate suggestions: {str(exc)}") from exc
 
 
 # ==================== Patient Medical Information Endpoints ====================

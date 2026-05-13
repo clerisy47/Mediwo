@@ -19,6 +19,11 @@ interface ParseDocumentResponse {
   summary: string;
 }
 
+interface DoctorSuggestionsResponse {
+  success: boolean;
+  suggestions: string[];
+}
+
 interface UserResponse {
   id: string;
   username: string;
@@ -242,6 +247,24 @@ export async function parseDocument(file: File): Promise<ParseDocumentResponse> 
   });
 
   return parseResponse<ParseDocumentResponse>(response);
+}
+
+export async function generateDoctorSuggestions(
+  medicalReportsSummary: string,
+  conversationSummary: string,
+): Promise<DoctorSuggestionsResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/doctor/suggestions`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      medical_reports_summary: medicalReportsSummary,
+      conversation_summary: conversationSummary,
+    }),
+  });
+
+  return parseResponse<DoctorSuggestionsResponse>(response);
 }
 
 // ==================== Patient Medical Information ====================

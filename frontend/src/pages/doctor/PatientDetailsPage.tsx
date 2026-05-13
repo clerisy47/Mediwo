@@ -4,7 +4,11 @@ import { Card } from '../../components/ui/Card';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { Button } from '../../components/ui/Button';
 import { MarkdownText } from '../../components/ui/MarkdownText';
-import { getPatientMedicalInfo, addDoctorNotes } from '../../services/backendApi';
+import {
+  getPatientMedicalInfo,
+  addDoctorNotes,
+  generateDoctorSuggestions,
+} from '../../services/backendApi';
 
 interface PatientDetailsInfo {
   id: string;
@@ -30,6 +34,10 @@ export function PatientDetailsPage() {
   const [submittingNotes, setSubmittingNotes] = useState(false);
   const [notesError, setNotesError] = useState<string | null>(null);
   const [notesSuccess, setNotesSuccess] = useState(false);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [isGeneratingSuggestions, setIsGeneratingSuggestions] = useState(false);
+  const [suggestionsError, setSuggestionsError] = useState<string | null>(null);
+  const [acceptedSuggestions, setAcceptedSuggestions] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const fetchPatientInfo = async () => {
@@ -78,6 +86,42 @@ export function PatientDetailsPage() {
     } finally {
       setSubmittingNotes(false);
     }
+  };
+
+  const handleGenerateSuggestions = async () => {
+    if (!info) {
+      return;
+    }
+
+    setIsGeneratingSuggestions(true);
+    setSuggestionsError(null);
+    setSuggestions([]);
+    setAcceptedSuggestions(new Set());
+
+    try {
+      const response = await generateDoctorSuggestions(
+        info.medical_reports_summary || '',
+        info.conversation_summary || '',
+      );
+      setSuggestions(response.suggestions);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to generate suggestions';
+      setSuggestionsError(message);
+    } finally {
+      setIsGeneratingSuggestions(false);
+    }
+  };
+
+  const handleAcceptSuggestion = (suggestion: string) => {
+    // Add to notes as a complete entry (already formatted as clinical note)
+    setNotes((prev) => `${prev}${prev ? '\n' : ''}${suggestion}`);
+    // Mark as accepted
+    setAcceptedSuggestions((prev) => new Set([...prev, suggestion]));
+  };
+
+  const handleRejectSuggestion = (suggestion: string) => {
+    // Remove from suggestions list
+    setSuggestions((prev) => prev.filter((s) => s !== suggestion));
   };
 
   if (loading) {
@@ -184,6 +228,89 @@ export function PatientDetailsPage() {
           </div>
         </Card>
       )}
+
+      {/* Patient Counseling & Recommendations */}
+      <Card style={{ marginBottom: '20px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+          <h3 style={{ margin: 0, fontSize: '16px' }}>Suggested Clinical Notes for Patient</h3>
+          <Button onClick={handleGenerateSuggestions} disabled={isGeneratingSuggestions}>
+            {isGeneratingSuggestions ? 'Generating...' : 'Generate Suggestions'}
+          </Button>
+        </div>
+
+        {suggestionsError && (
+          <div
+            style={{
+              backgroundColor: '#ffebee',
+              color: '#c62828',
+              padding: '12px',
+              borderRadius: '4px',
+              marginBottom: '12px',
+            }}
+          >
+            Error: {suggestionsError}
+          </div>
+        )}
+
+        {suggestions.length > 0 ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {suggestions.map((suggestion, index) => (
+              <div
+                key={index}
+                style={{
+                  backgroundColor: acceptedSuggestions.has(suggestion) ? '#e8f5e9' : '#f5f5f5',
+                  padding: '12px',
+                  borderRadius: '6px',
+                  border: acceptedSuggestions.has(suggestion) ? '2px solid #4caf50' : '1px solid #ddd',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                }}
+              >
+                <p style={{ margin: 0, flex: 1, color: '#333', lineHeight: '1.5' }}>{suggestion}</p>
+                <div style={{ display: 'flex', gap: '8px', marginLeft: '12px' }}>
+                  {acceptedSuggestions.has(suggestion) ? (
+                    <span style={{ color: '#4caf50', fontWeight: 'bold', padding: '6px 12px' }}>✓ Added</span>
+                  ) : (
+                    <>
+                      <Button
+                        onClick={() => handleAcceptSuggestion(suggestion)}
+                        style={{
+                          background: '#4caf50',
+                          color: 'white',
+                          padding: '6px 12px',
+                          fontSize: '12px',
+                          border: 'none',
+                          borderRadius: '4px',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        Accept
+                      </Button>
+                      <Button
+                        onClick={() => handleRejectSuggestion(suggestion)}
+                        style={{
+                          background: '#f5f5f5',
+                          color: '#666',
+                          padding: '6px 12px',
+                          fontSize: '12px',
+                          border: '1px solid #ddd',
+                          borderRadius: '4px',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        Reject
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p style={{ color: '#999', margin: 0 }}>Generate AI-suggested clinical note entries to quickly document your counseling points from medical reports and patient intake.</p>
+        )}
+      </Card>
 
       {/* Doctor Notes Section */}
       <Card style={{ marginBottom: '20px' }}>
