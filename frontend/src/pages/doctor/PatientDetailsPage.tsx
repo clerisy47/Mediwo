@@ -6,6 +6,7 @@ import { Button } from '../../components/ui/Button';
 import { MarkdownText } from '../../components/ui/MarkdownText';
 import {
   getPatientMedicalInfo,
+  getMedicalReportsSummaries,
   addDoctorNotes,
   generateDoctorSuggestions,
 } from '../../services/backendApi';
@@ -24,6 +25,12 @@ interface PatientDetailsInfo {
   updated_at?: string;
 }
 
+interface PatientReportSummary {
+  id: string;
+  summary: string;
+  created_at: string;
+}
+
 export function PatientDetailsPage() {
   const { infoId } = useParams<{ infoId: string }>();
   const navigate = useNavigate();
@@ -38,6 +45,9 @@ export function PatientDetailsPage() {
   const [isGeneratingSuggestions, setIsGeneratingSuggestions] = useState(false);
   const [suggestionsError, setSuggestionsError] = useState<string | null>(null);
   const [acceptedSuggestions, setAcceptedSuggestions] = useState<Set<string>>(new Set());
+  const [medicalReportSummaries, setMedicalReportSummaries] = useState<PatientReportSummary[]>([]);
+  const [medicalReportsLoading, setMedicalReportsLoading] = useState(false);
+  const [medicalReportsError, setMedicalReportsError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchPatientInfo = async () => {
@@ -60,6 +70,39 @@ export function PatientDetailsPage() {
 
     fetchPatientInfo();
   }, [infoId]);
+
+  useEffect(() => {
+    const fetchMedicalReportSummaries = async () => {
+      if (!info?.patient_id) {
+        return;
+      }
+
+      setMedicalReportsLoading(true);
+      setMedicalReportsError(null);
+
+      try {
+        const response = await getMedicalReportsSummaries(info.patient_id);
+        setMedicalReportSummaries(response.summaries || []);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Failed to fetch medical reports summaries';
+        setMedicalReportsError(message);
+      } finally {
+        setMedicalReportsLoading(false);
+      }
+    };
+
+    fetchMedicalReportSummaries();
+  }, [info?.patient_id]);
+
+  const combinedMedicalReportsSummary = medicalReportSummaries.length > 0
+    ? medicalReportSummaries
+        .map((report, index) => {
+          const createdAt = new Date(report.created_at).toLocaleString();
+
+          return `Report ${index + 1} (${createdAt})\n${report.summary}`;
+        })
+        .join('\n\n---\n\n')
+    : info?.medical_reports_summary || '';
 
   const handleAddNotes = async () => {
     if (!infoId || !notes.trim()) {
@@ -100,7 +143,7 @@ export function PatientDetailsPage() {
 
     try {
       const response = await generateDoctorSuggestions(
-        info.medical_reports_summary || '',
+        combinedMedicalReportsSummary,
         info.conversation_summary || '',
       );
       setSuggestions(response.suggestions);
@@ -213,19 +256,59 @@ export function PatientDetailsPage() {
       </Card>
 
       {/* Medical Reports Summary */}
-      {info.medical_reports_summary && (
+      {(medicalReportsLoading || medicalReportsError || medicalReportSummaries.length > 0 || info.medical_reports_summary) && (
         <Card style={{ marginBottom: '20px' }}>
-          <h3 style={{ marginTop: 0, marginBottom: '12px', fontSize: '16px' }}>Medical Reports Summary</h3>
-          <div style={{
-            backgroundColor: '#f5f5f5',
-            padding: '15px',
-            borderRadius: '6px',
-            lineHeight: '1.6',
-            color: '#333',
-            wordBreak: 'break-word'
-          }}>
-            <MarkdownText content={info.medical_reports_summary} />
-          </div>
+          <h3 style={{ marginTop: 0, marginBottom: '12px', fontSize: '16px' }}>Past Medical Reports</h3>
+
+          {medicalReportsLoading && (
+            <p style={{ color: '#777', margin: '0 0 12px 0' }}>Loading medical reports summaries...</p>
+          )}
+
+          {medicalReportsError && (
+            <div style={{
+              backgroundColor: '#ffebee',
+              color: '#c62828',
+              padding: '12px',
+              borderRadius: '4px',
+              marginBottom: '12px',
+            }}>
+              Error: {medicalReportsError}
+            </div>
+          )}
+
+          {medicalReportSummaries.length > 0 ? medicalReportSummaries.map((report, index) => (
+            <div
+              key={report.id}
+              style={{
+                backgroundColor: '#f5f5f5',
+                padding: '15px',
+                borderRadius: '6px',
+                lineHeight: '1.6',
+                color: '#333',
+                wordBreak: 'break-word',
+                marginBottom: index === medicalReportSummaries.length - 1 ? 0 : '12px',
+                border: '1px solid #e6e6e6',
+              }}
+            >
+              <div style={{ marginBottom: '8px', fontSize: '12px', color: '#777' }}>
+                Saved on {new Date(report.created_at).toLocaleString()}
+              </div>
+              <MarkdownText content={report.summary} />
+            </div>
+          )) : info.medical_reports_summary ? (
+            <div style={{
+              backgroundColor: '#f5f5f5',
+              padding: '15px',
+              borderRadius: '6px',
+              lineHeight: '1.6',
+              color: '#333',
+              wordBreak: 'break-word'
+            }}>
+              <MarkdownText content={info.medical_reports_summary} />
+            </div>
+          ) : (
+            <p style={{ color: '#999', margin: 0 }}>No medical report summaries available for this patient.</p>
+          )}
         </Card>
       )}
 
